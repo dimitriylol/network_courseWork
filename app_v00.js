@@ -3,6 +3,51 @@ var width  = 960,
     height = 500,
     colors = d3.scale.category10();
 
+function showTableWays(id) {
+    //send get-request for table with proper id
+    fillTableWays(id);
+    tip_node.hide();
+    $( "#tableWays" ).dialog( "open" );
+}
+
+function fillTableWays(id) {
+    var theData = [[1, 2], [3, 4], [5, 6]];
+    var table = d3.select('body').select('#tableWays').append('table');
+    table.selectAll("tr")
+	.data(theData)
+	.enter()
+	.append("tr")
+	.selectAll("td")
+	.data(function(d) { return d; })
+        .enter()
+	.append("td")
+	.text(function(d, y) { return d; });
+}
+
+var tip_node = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(d) {
+	if (d3.select('body').select('#tableWays').empty())
+	    d3.select('body').append('div').attr('id','tableWays').attr('title', 'Table of ways');
+ 
+	$(function() {
+	    $( "#tableWays" ).dialog({
+		autoOpen: false,
+		show: {
+		    effect: "blind",
+		    duration: 1000
+		},
+		hide: {
+		    effect: "explode",
+		    duration: 1000
+		}
+	    });
+	});
+
+	return '<button id="showTable" onclick="showTableWays(\'' + d.id + '\')"> Get table </button>';
+    });
+
 var tip_edge = d3.tip()
     .attr('class', 'd3-tip')
     .offset([-10, 0])
@@ -123,7 +168,6 @@ function restart() {
 
   // add new links
   var link = path.enter().append('svg:path');
-    // console.log('link is ' + link);
     path.call(tip_edge);
     // console.log('link is ' + link);
     link.attr('class', 'link')
@@ -150,7 +194,7 @@ function restart() {
   // circle (node) group
   // NB: the function arg is crucial here! nodes are known by id, not by index!
   circle = circle.data(nodes, function(d) { return d.id; });
-
+    // debugger;
   // update existing nodes (reflexive & selected visual states)
   circle.selectAll('circle')
     .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
@@ -158,7 +202,9 @@ function restart() {
 
   // add new nodes
   var g = circle.enter().append('svg:g');
-
+    // debugger;
+    if (null != g[0][0])
+	g.call(tip_node);
   g.append('svg:circle')
     .attr('class', 'node')
     .attr('r', 12)
@@ -166,9 +212,10 @@ function restart() {
     .style('stroke', function(d) { return d3.rgb(colors(d.id)).darker().toString(); })
     .classed('reflexive', function(d) { return d.reflexive; })
     .on('mouseover', function(d) {
-      if(!mousedown_node || d === mousedown_node) return;
-      // enlarge target node
-      d3.select(this).attr('transform', 'scale(1.1)');
+	tip_node.show(d);
+	if(!mousedown_node || d === mousedown_node) return;
+	// enlarge target node
+	d3.select(this).attr('transform', 'scale(1.1)');
     })
     .on('mouseout', function(d) {
       if(!mousedown_node || d === mousedown_node) return;
