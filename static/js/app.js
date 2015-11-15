@@ -67,7 +67,7 @@ var svg = d3.select('body')
 //  - links are always source < target; edge directions are set by 'left' and 'right'.
 var nodes = [
     {id: 0, reflexive: false},
-    {id: 1, reflexive: true },
+    {id: 1, reflexive: false},
     {id: 2, reflexive: false}
   ],
   lastNodeId = 2,
