@@ -1,6 +1,3 @@
-import json
-
-
 class NetworkConnection:
     def __init__(self, weight, id1=None, id2=None, type_connection='duplex', satellite=False):
         real_weight = lambda x: weight*3 if x else weight

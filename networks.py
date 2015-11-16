@@ -2,17 +2,18 @@ from flask import Flask
 from flask import render_template
 
 
-class CourceWork:
+class CourseWork:
     def __init__(self):
-        app = Flask(__name__, static_url_path='')
-        network = GlobalNetwork()
+        self.app = Flask(__name__, static_url_path='')
+        # network = GlobalNetwork()
 
+course_work = CourseWork()
 
-@CourceWork.app.route('/')
+@course_work.app.route('/')
 def hello_world():
     return render_template('index.html')
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run()
+    course_work.app.debug = True
+    course_work.app.run()
