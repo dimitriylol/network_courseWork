@@ -1,13 +1,20 @@
+import json
 from flask import Flask
 from flask import render_template
+from Network.GlobalNetwork import GlobalNetwork
 
 
 class CourseWork:
     def __init__(self):
         self.app = Flask(__name__, static_url_path='')
-        # network = GlobalNetwork()
+        self.network = GlobalNetwork()
 
 course_work = CourseWork()
+
+@course_work.app.route('/globalNetwork', methods=['GET'])
+def getGlobalNetwork():
+    return course_work.network.to_json()
+
 
 @course_work.app.route('/')
 def hello_world():

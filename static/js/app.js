@@ -65,18 +65,9 @@ var svg = d3.select('body')
 //  - nodes are known by 'id', not by index in array.
 //  - reflexive edges are indicated on the node (as a bold black circle).
 //  - links are always source < target; edge directions are set by 'left' and 'right'.
-var nodes = [
-    {id: 0, reflexive: false},
-    {id: 1, reflexive: false},
-    {id: 2, reflexive: false}
-  ],
-  lastNodeId = 2,
-  links = [
-    {source: nodes[0], target: nodes[1], left: false, right: true,
-     type: "d", weight: 1},
-    {source: nodes[1], target: nodes[2], left: false, right: true,
-     type: "d", weight: 1}
-  ];
+var nodes = [],
+  lastNodeId = -1,
+  links = [];
 
 // init D3 force layout
 var force = d3.layout.force()
@@ -423,6 +414,30 @@ function keyup() {
   }
 }
 
+function indexFromObjectArr(objArr, proper, val) {
+  return objArr.map(function(obj) { obj[proper]; }).indexOf(val);
+}
+
+function getGlobalNetwork() {
+  $.getJSON(
+    "/globalNetwork",
+    function (data) {
+      console.log("DATA: nodes " + data.nodes + " links: " + data.links);
+      nodes = data.nodes;
+      links = data.links;
+      console.log('type of data links ' + typeof (data.links))
+      console.log('type of links ' + typeof (links))
+      console.log('source ' + links[0].source)
+      for (var i = 0, lenLinks = links.length; i < lenLinks; i++) {
+        console.log('index for source: id ' + links[i].source + ' index ' + indexFromObjectArr(nodes, 'id', links[i].source));
+        console.log('index for target: id ' + links[i].target + ' index ' + indexFromObjectArr(nodes, 'id', links[i].target));
+        links[i].source = nodes[indexFromObjectArr(nodes, 'id', links[i].source)];
+        links[i].target = nodes[indexFromObjectArr(nodes, 'id', links[i].target)];
+      }
+      console.log("from getGlobalNetwork: nodes " + nodes + " links: " + links);
+    });
+}
+
 // app starts here
 svg.on('mousedown', mousedown)
   .on('mousemove', mousemove)
@@ -430,4 +445,5 @@ svg.on('mousedown', mousedown)
 d3.select(window)
   .on('keydown', keydown)
   .on('keyup', keyup);
-restart();
+getGlobalNetwork()
+//restart();
