@@ -52,7 +52,8 @@ var tip_edge = d3.tip()
     .attr('class', 'd3-tip')
     .offset([-10, 0])
     .html(function(d) {
-	return "type: " + d.type + " weight: " + d.weight;
+      debugger;
+	  return "type: " + d.type + " weight: " + d.weight;
     });
 
 var svg = d3.select('body')
@@ -65,9 +66,9 @@ var svg = d3.select('body')
 //  - nodes are known by 'id', not by index in array.
 //  - reflexive edges are indicated on the node (as a bold black circle).
 //  - links are always source < target; edge directions are set by 'left' and 'right'.
-var nodes = [],
+var nodes = [-1],
   lastNodeId = -1,
-  links = [];
+  links = [-1];
 
 // init D3 force layout
 var force = d3.layout.force()
@@ -149,6 +150,7 @@ function tick() {
 // update graph (called when needed)
 function restart() {
   // path (link) group
+
   path = path.data(links);
 
   // update existing links
@@ -415,27 +417,45 @@ function keyup() {
 }
 
 function indexFromObjectArr(objArr, proper, val) {
-  return objArr.map(function(obj) { obj[proper]; }).indexOf(val);
+  return objArr.map(function(obj) { return obj[proper]; }).indexOf(val);
 }
 
 function getGlobalNetwork() {
-  $.getJSON(
+  $.when( $.getJSON(
     "/globalNetwork",
     function (data) {
-      console.log("DATA: nodes " + data.nodes + " links: " + data.links);
-      nodes = data.nodes;
-      links = data.links;
-      console.log('type of data links ' + typeof (data.links))
-      console.log('type of links ' + typeof (links))
-      console.log('source ' + links[0].source)
-      for (var i = 0, lenLinks = links.length; i < lenLinks; i++) {
-        console.log('index for source: id ' + links[i].source + ' index ' + indexFromObjectArr(nodes, 'id', links[i].source));
-        console.log('index for target: id ' + links[i].target + ' index ' + indexFromObjectArr(nodes, 'id', links[i].target));
-        links[i].source = nodes[indexFromObjectArr(nodes, 'id', links[i].source)];
-        links[i].target = nodes[indexFromObjectArr(nodes, 'id', links[i].target)];
+      nodes = data.nodes.map(function(node) { return JSON.parse(node); });
+      lastNodeId = nodes[nodes.length - 1].id;
+      links = data.links.map(function (link) { return JSON.parse(link); });
+      links.forEach(function(link, index, arr) {
+        link.source = nodes[indexFromObjectArr(nodes, 'id', link.source)];
+        link.target = nodes[indexFromObjectArr(nodes, 'id', link.target)];
+      });
+    })).done(function(not_used) {
+    links.forEach(function(link) {
+      if (typeof nodes[link.source] === 'undefined') {
+        console.log('undefined source', link);
       }
-      console.log("from getGlobalNetwork: nodes " + nodes + " links: " + links);
+      if (typeof nodes[link.target] === 'undefined') {
+        console.log('undefined target', link);
+      }
     });
+    debugger;
+    nodes = [
+      {id: 0, reflexive: false},
+      {id: 1, reflexive: false},
+      {id: 2, reflexive: false}
+    ];
+    lastNodeId = 2;
+    links = [
+      {source: nodes[0], target: nodes[1], left: false, right: true,
+       type: "d", weight: 1},
+      {source: nodes[1], target: nodes[2], left: false, right: true,
+       type: "d", weight: 1}
+    ];
+    debugger;
+    restart();
+  });
 }
 
 // app starts here
@@ -445,5 +465,6 @@ svg.on('mousedown', mousedown)
 d3.select(window)
   .on('keydown', keydown)
   .on('keyup', keyup);
-getGlobalNetwork()
-//restart();
+
+getGlobalNetwork();
+
