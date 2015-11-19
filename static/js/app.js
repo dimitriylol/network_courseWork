@@ -293,7 +293,7 @@ function restart() {
 
             restart();
         })
-        .on('mouseup', function(d) {
+        .on('mouseup', function(node) {
             if(!mousedown_node) return;
 
             // needed by FF
@@ -302,7 +302,7 @@ function restart() {
                 .style('marker-end', '');
 
             // check for drag-to-self
-            mouseup_node = d;
+            mouseup_node = node;
             if (mouseup_node === mousedown_node) {
                 resetMouseVars();
                 return;
@@ -325,10 +325,9 @@ function restart() {
                 direction = 'left';
             }
 
-            //TODO: use Array.find method instead of Array.filter, but check if it is available before it (in other case: use es-shim)
-            var link = links.filter(function(l) {
+            var link = links.find(function(l) {
                 return l.source === source && l.target === target;
-            })[0];
+            });
 
             if (link) {
                 link[direction] = true;
