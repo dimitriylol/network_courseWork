@@ -101,37 +101,31 @@ var nodes = [-1],
 var force = d3.layout.force()
 
 function defineArrowMarkers() {
-    svg.append('svg:defs')
-        .append('svg:marker')
-            .attr({
-                id: 'end-arrow',
-                viewBox: '0 -5 10 10',
-                refX: 6,
-                markerWidth: 3,
-                markerHeight: 3,
-                orient: 'auto'
-            })
-        .append('svg:path')
-            .attr({
-                d: 'M0,-5L10,0L0,5',
-                fill: '#000'
-            });
+    function createArrow(markerParam, pathD) {
+        Object.assign(markerParam, {
+            viewBox: '0 -5 10 10',
+            markerWidth: 3,
+            markerHeight: 3,
+            orient: 'auto'
+        });
 
-    svg.append('svg:defs')
-        .append('svg:marker')
-            .attr({
-                id: 'start-arrow',
-                viewBox: '0 -5 10 10',
-                refX: 4,
-                markerWidth: 3,
-                markerHeight: 3,
-                orient: 'auto'
-            })
-        .append('svg:path')
-            .attr({
-                d: 'M10,-5L0,0L10,5',
-                fill: '#000'
+        svg.append('svg:defs')
+            .append('svg:marker').attr(markerParam)
+            .append('svg:path').attr({
+                fill: '#000',
+                d: pathD
             });
+    }
+
+    createArrow({
+        id: 'end-arrow',
+        refX: 6,
+    }, 'M0,-5L10,0L0,5');
+
+    createArrow({
+        id: 'start-arrow',
+        refX: 4,
+    }, 'M10,-5L0,0L10,5');
 }
 
 defineArrowMarkers();
