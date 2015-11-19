@@ -46,38 +46,39 @@ function fillTableWays(id) {
         .text(function(d) {return d});
 }
 
-var tip_node = d3.tip()
+function createTooltip(htmlFunction) {
+    return d3.tip()
         .attr('class', 'd3-tip')
         .offset([-10, 0])
-        .html(function(d) {
-            if (body.select('#tableWays').empty()) {
-                body.append('div').attr({
-                    id: 'tableWays',
-                    title: 'Table of ways'
-                });
-            }
- 
-            $(function() {
-                $('#tableWays').dialog({
-                    autoOpen: false,
-                    show: {
-                        effect: 'blind',
-                        duration: 1000
-                    },
-                    hide: {
-                        effect: 'explode',
-                        duration: 1000
-                    }
-                });
-            });
+        .html(htmlFunction);
+}
 
-            return buttonTemplate.replace('{id}', d.id);
+var tip_node = createTooltip(function(d) {
+        if (body.select('#tableWays').empty()) {
+            body.append('div').attr({
+                id: 'tableWays',
+                title: 'Table of ways'
+            });
+        }
+
+        $(function() {
+            $('#tableWays').dialog({
+                autoOpen: false,
+                show: {
+                    effect: 'blind',
+                    duration: 1000
+                },
+                hide: {
+                    effect: 'explode',
+                    duration: 1000
+                }
+            });
         });
 
-var tip_edge = d3.tip()
-    .attr('class', 'd3-tip')
-    .offset([-10, 0])
-    .html(function(d) {
+        return buttonTemplate.replace('{id}', d.id);
+    });
+
+var tip_edge = createTooltip(function(d) {
         return 'type: ' + d.type + ' weight: ' + d.weight;
     });
 
