@@ -128,7 +128,7 @@ function defineArrowMarkers() {
             .attr('fill', '#000');
 }
 
-defineArrowMarkersForGraphLinks();
+defineArrowMarkers();
 
 // line displayed when dragging new nodes
 var drag_line = svg.append('svg:path')
@@ -339,7 +339,13 @@ function restart() {
             restart();
         });
 
-    showNodeIds();
+    // showNodeIds();
+    g.append('svg:text')
+        .attr('x', 0)
+        .attr('y', 4)
+        .attr('class', 'id')
+        .text(function(d) {return d.id});
+    
     removeOldNodes();
 
     // set the graph in motion
@@ -507,7 +513,7 @@ function getGlobalNetwork() {
         });
 
         //TODO: remove debugger
-        debugger;
+        // debugger;
 
         nodes = [
             {id: 0, reflexive: false},
@@ -521,7 +527,7 @@ function getGlobalNetwork() {
         ];
 
         //TODO: remove debugger
-        debugger;
+        // debugger;
         restart();
     });
 }
