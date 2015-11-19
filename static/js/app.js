@@ -31,6 +31,7 @@ function showTableWays(id) {
 }
 
 function fillTableWays(id) {
+    //TODO: id is unused variable now, fix it or remove
     var theData = [[1, 2], [3, 4], [5, 6]];
     body.select('#tableWays').html('');
     var table = body.select('#tableWays').append('table');
@@ -119,12 +120,12 @@ function defineArrowMarkers() {
 
     createArrow({
         id: 'end-arrow',
-        refX: 6,
+        refX: 6
     }, 'M0,-5L10,0L0,5');
 
     createArrow({
         id: 'start-arrow',
-        refX: 4,
+        refX: 4
     }, 'M10,-5L0,0L10,5');
 }
 
@@ -491,6 +492,18 @@ function indexFromObjectArr(objArr, proper, val) {
     return objArr.map(function(obj) {return obj[proper]}).indexOf(val);
 }
 
+//TODO: rename me or not
+function calculateForce() {
+    force = d3.layout.force()
+        .nodes(nodes)
+        .links(links)
+        .size([width, height])
+        .linkDistance(150)
+        .charge(-500)
+        .on('tick', tick)
+    restart();
+}
+
 function getGlobalNetwork() {
     $.when(
         $.getJSON(
@@ -507,16 +520,7 @@ function getGlobalNetwork() {
                 });
             }
         ))
-    .done(function(not_used) {
-	force = d3.layout.force()
-	    .nodes(nodes)
-	    .links(links)
-	    .size([width, height])
-	    .linkDistance(150)
-	    .charge(-500)
-	    .on('tick', tick)
-	restart();
-    });
+    .done(calculateForce);
 }
 
 function getGlobalNetwork() {
@@ -530,14 +534,7 @@ function getGlobalNetwork() {
         {source: nodes[0], target: nodes[1], left: false, right: true, type: 'd', weight: 1},
         {source: nodes[1], target: nodes[2], left: false, right: true, type: 'd', weight: 1}
     ];
-    force = d3.layout.force()
-	.nodes(nodes)
-	.links(links)
-	.size([width, height])
-	.linkDistance(150)
-	.charge(-500)
-	.on('tick', tick)
-    restart();
+    calculateForce();
 }
 
 function startApp() {
