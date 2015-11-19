@@ -32,6 +32,7 @@ function showTableWays(id) {
 
 function fillTableWays(id) {
     var theData = [[1, 2], [3, 4], [5, 6]];
+    body.select('#tableWays').html('');
     var table = body.select('#tableWays').append('table');
 
     table.selectAll('tr')
@@ -42,7 +43,7 @@ function fillTableWays(id) {
         .data(function(d) {return d})
         .enter()
         .append('td')
-        .text(function(d, y) {return d});
+        .text(function(d) {return d});
 }
 
 var tip_node = d3.tip()
