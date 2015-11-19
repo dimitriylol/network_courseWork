@@ -74,8 +74,6 @@ var tip_edge = d3.tip()
     .attr('class', 'd3-tip')
     .offset([-10, 0])
     .html(function(d) {
-        //TODO: remove debugger; can we use console.log instead of debugger statement here?
-        debugger;
         return 'type: ' + d.type + ' weight: ' + d.weight;
     });
 
@@ -93,14 +91,7 @@ var nodes = [-1],
     lastNodeId = -1,
     links = [-1];
 
-// init D3 force layout
 var force = d3.layout.force()
-    .nodes(nodes)
-    .links(links)
-    .size([width, height])
-    .linkDistance(150)
-    .charge(-500)
-    .on('tick', tick)
 
 function defineArrowMarkers() {
     svg.append('svg:defs')
@@ -236,7 +227,6 @@ function restart() {
     var fillColor = function(d) {return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id)};
     var isReflexive = function(d) {return d.reflexive};
 
-    // debugger;
     // update existing nodes (reflexive & selected visual states)
     circle.selectAll('circle')
         .style('fill', fillColor)
@@ -245,7 +235,6 @@ function restart() {
     // add new nodes
     var g = circle.enter().append('svg:g');
     
-    // debugger;
     if (null != g[0][0]) {
         g.call(tip_node);
     }
@@ -502,33 +491,14 @@ function getGlobalNetwork() {
             }
         ))
     .done(function(not_used) {
-        links.forEach(function(link) {
-            if (typeof nodes[link.source] === 'undefined') {
-                console.log('undefined source', link);
-            }
-
-            if (typeof nodes[link.target] === 'undefined') {
-                console.log('undefined target', link);
-            }
-        });
-
-        //TODO: remove debugger
-        // debugger;
-
-        nodes = [
-            {id: 0, reflexive: false},
-            {id: 1, reflexive: false},
-            {id: 2, reflexive: false}
-        ];
-        lastNodeId = 2;
-        links = [
-            {source: nodes[0], target: nodes[1], left: false, right: true, type: 'd', weight: 1},
-            {source: nodes[1], target: nodes[2], left: false, right: true, type: 'd', weight: 1}
-        ];
-
-        //TODO: remove debugger
-        // debugger;
-        restart();
+	force = d3.layout.force()
+	    .nodes(nodes)
+	    .links(links)
+	    .size([width, height])
+	    .linkDistance(150)
+	    .charge(-500)
+	    .on('tick', tick)
+	restart();
     });
 }
 
