@@ -2,6 +2,7 @@
 var width  = 960,
     height = 500,
     colors = d3.scale.category10();
+var nodesJsonPath = '/globalNetwork';
 
 //comon used variables:
 var body = d3.select('body');
@@ -14,6 +15,13 @@ var KEY = {
     R: 82,
     ctrl: 17
 };
+
+// mouse event vars
+var selected_node = null,
+    selected_link = null,
+    mousedown_link = null,
+    mousedown_node = null,
+    mouseup_node = null;
 
 function showTableWays(id) {
     //send GET request for table with proper id
@@ -94,30 +102,33 @@ var force = d3.layout.force()
     .charge(-500)
     .on('tick', tick)
 
-// define arrow markers for graph links
-svg.append('svg:defs')
-    .append('svg:marker')
-        .attr('id', 'end-arrow')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 6)
-        .attr('markerWidth', 3)
-        .attr('markerHeight', 3)
-        .attr('orient', 'auto')
-    .append('svg:path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#000');
+function defineArrowMarkers() {
+    svg.append('svg:defs')
+        .append('svg:marker')
+            .attr('id', 'end-arrow')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 6)
+            .attr('markerWidth', 3)
+            .attr('markerHeight', 3)
+            .attr('orient', 'auto')
+        .append('svg:path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', '#000');
 
-svg.append('svg:defs')
-    .append('svg:marker')
-        .attr('id', 'start-arrow')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 4)
-        .attr('markerWidth', 3)
-        .attr('markerHeight', 3)
-        .attr('orient', 'auto')
-    .append('svg:path')
-        .attr('d', 'M10,-5L0,0L10,5')
-        .attr('fill', '#000');
+    svg.append('svg:defs')
+        .append('svg:marker')
+            .attr('id', 'start-arrow')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 4)
+            .attr('markerWidth', 3)
+            .attr('markerHeight', 3)
+            .attr('orient', 'auto')
+        .append('svg:path')
+            .attr('d', 'M10,-5L0,0L10,5')
+            .attr('fill', '#000');
+}
+
+defineArrowMarkersForGraphLinks();
 
 // line displayed when dragging new nodes
 var drag_line = svg.append('svg:path')
@@ -127,13 +138,6 @@ var drag_line = svg.append('svg:path')
 // handles to link and node element groups
 var path = svg.append('svg:g').selectAll('path'),
     circle = svg.append('svg:g').selectAll('g');
-
-// mouse event vars
-var selected_node = null,
-    selected_link = null,
-    mousedown_link = null,
-    mousedown_node = null,
-    mouseup_node = null;
 
 function resetMouseVars() {
     mousedown_node = null;
@@ -164,24 +168,18 @@ function tick() {
     });
 }
 
-// update graph (called when needed)
-function restart() {
-    // path (link) group
+//TODO: think about functions naming
+var isSelected = function(d) {return d === selected_link};
+var isLeftTrue = function(d) {return d.left ? 'url(#start-arrow)' : ''};
+var isRightTrue = function(d) {return d.right ? 'url(#end-arrow)' : ''};
 
-    path = path.data(links);
-
-    //TODO: think about functions naming
-    var isSelected = function(d) {return d === selected_link};
-    var isLeftTrue = function(d) {return d.left ? 'url(#start-arrow)' : ''};
-    var isRightTrue = function(d) {return d.right ? 'url(#end-arrow)' : ''};
-
-    // update existing links
+function updateExistingLinks() {
     path.classed('selected', isSelected)
         .style('marker-start', isLeftTrue)
         .style('marker-end', isRightTrue);
+}
 
-
-    // add new links
+function addNewLinks() {
     var link = path.enter().append('svg:path');
     path.call(tip_edge);
 
@@ -202,9 +200,33 @@ function restart() {
             selected_node = null;
             restart();
         });
+}
 
-    // remove old links
+function removeOldLinks() {
     path.exit().remove();
+}
+
+function showNodeIds() {
+    g.append('svg:text')
+        .attr('x', 0)
+        .attr('y', 4)
+        .attr('class', 'id')
+        .text(function(d) {return d.id});
+}
+
+function removeOldNodes() {
+    circle.exit().remove();
+}
+
+//TODO: think aboiut naming. what about renaming this function less abstract?
+// update graph (called when needed)
+function restart() {
+    // path (link) group
+    path = path.data(links);
+
+    updateExistingLinks();
+    addNewLinks();
+    removeOldLinks();
 
     // circle (node) group
     // NB: the function arg is crucial here! nodes are known by id, not by index!
@@ -298,9 +320,9 @@ function restart() {
                 direction = 'left';
             }
 
-            var link;
-            link = links.filter(function(l) {
-                return (l.source === source && l.target === target);
+            //TODO: use Array.find method instead of Array.filter, but check if it is available before it (in other case: use es-shim)
+            var link = links.filter(function(l) {
+                return l.source === source && l.target === target;
             })[0];
 
             if (link) {
@@ -317,15 +339,8 @@ function restart() {
             restart();
         });
 
-    // show node IDs
-    g.append('svg:text')
-        .attr('x', 0)
-        .attr('y', 4)
-        .attr('class', 'id')
-        .text(function(d) {return d.id});
-
-    // remove old nodes
-    circle.exit().remove();
+    showNodeIds();
+    removeOldNodes();
 
     // set the graph in motion
     force.start();
@@ -460,14 +475,14 @@ function keyup() {
 }
 
 function indexFromObjectArr(objArr, proper, val) {
-    //TODO: reduce using array functions by using proper method
+    //TODO: reduce using array functions by using proper method (Array.findIndex)
     return objArr.map(function(obj) {return obj[proper]}).indexOf(val);
 }
 
 function getGlobalNetwork() {
     $.when(
         $.getJSON(
-            "/globalNetwork",
+            nodesJsonPath,
             function (data) {
                 nodes = data.nodes.map(function(node) {return JSON.parse(node)});
                 lastNodeId = nodes[nodes.length - 1].id;
@@ -501,8 +516,8 @@ function getGlobalNetwork() {
         ];
         lastNodeId = 2;
         links = [
-            {source: nodes[0], target: nodes[1], left: false, right: true, type: "d", weight: 1},
-            {source: nodes[1], target: nodes[2], left: false, right: true, type: "d", weight: 1}
+            {source: nodes[0], target: nodes[1], left: false, right: true, type: 'd', weight: 1},
+            {source: nodes[1], target: nodes[2], left: false, right: true, type: 'd', weight: 1}
         ];
 
         //TODO: remove debugger
