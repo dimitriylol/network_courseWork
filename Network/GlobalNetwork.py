@@ -32,13 +32,15 @@ class GlobalNetwork():
 
     def make_gateway(self):
         id_satellite_network = random.randint(0, 3)
-        self.make_adjustment_connections(id_satellite_network, satellite=True)
-        self.make_adjustment_connections(id_satellite_network - 2, satellite=False)
+        gateways_elements = [self.get_random_element_id(id_reg_network)
+                             for id_reg_network in xrange(self.reg_network_num)]
+        self.make_adjustment_connections(id_satellite_network, gateways_elements, satellite=True)
+        self.make_adjustment_connections(id_satellite_network - 2, gateways_elements, satellite=False)
 
-    def make_adjustment_connections(self, id_network, satellite):
+    def make_adjustment_connections(self, id_network, gateways_elements, satellite):
         for x in (id_network - 1, id_network):
-            id1 = self.get_random_element_id(x)
-            id2 = self.get_random_element_id((x + 1) % self.reg_network_num)
+            id1 = gateways_elements[x]
+            id2 = gateways_elements[(x + 1) % self.reg_network_num]
             self.elements[x].set_gateway(id1)
             self.elements[(x + 1) % self.reg_network_num].set_gateway(id2)
             self.elements[x].set_connection(id1, id2, satellite)
