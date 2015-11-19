@@ -502,6 +502,27 @@ function getGlobalNetwork() {
     });
 }
 
+function getGlobalNetwork() {
+    nodes = [
+        {id: 0, reflexive: false},
+        {id: 1, reflexive: false},
+        {id: 2, reflexive: false}
+    ];
+    lastNodeId = 2;
+    links = [
+        {source: nodes[0], target: nodes[1], left: false, right: true, type: 'd', weight: 1},
+        {source: nodes[1], target: nodes[2], left: false, right: true, type: 'd', weight: 1}
+    ];
+    force = d3.layout.force()
+	.nodes(nodes)
+	.links(links)
+	.size([width, height])
+	.linkDistance(150)
+	.charge(-500)
+	.on('tick', tick)
+    restart();
+}
+
 function startApp() {
     svg.on('mousedown', mousedown)
         .on('mousemove', mousemove)
