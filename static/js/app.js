@@ -6,9 +6,17 @@ var width  = 960,
 //comon used variables:
 var body = d3.select('body');
 var buttonTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
+var KEY = {
+    backspace: 8,
+    delete: 46,
+    B: 66,
+    L: 76,
+    R: 82,
+    ctrl: 17
+};
 
 function showTableWays(id) {
-    //send get-request for table with proper id
+    //send GET request for table with proper id
     fillTableWays(id);
     tip_node.hide();
     $('#tableWays').dialog('open');
@@ -17,15 +25,16 @@ function showTableWays(id) {
 function fillTableWays(id) {
     var theData = [[1, 2], [3, 4], [5, 6]];
     var table = body.select('#tableWays').append('table');
+
     table.selectAll('tr')
         .data(theData)
         .enter()
         .append('tr')
         .selectAll('td')
-        .data(function(d) { return d; })
+        .data(function(d) {return d})
         .enter()
         .append('td')
-        .text(function(d, y) { return d; });
+        .text(function(d, y) {return d});
 }
 
 var tip_node = d3.tip()
@@ -161,10 +170,15 @@ function restart() {
 
     path = path.data(links);
 
+    //TODO: think about functions naming
+    var isSelected = function(d) {return d === selected_link};
+    var isLeftTrue = function(d) {return d.left ? 'url(#start-arrow)' : ''};
+    var isRightTrue = function(d) {return d.right ? 'url(#end-arrow)' : ''};
+
     // update existing links
-    path.classed('selected', function(d) { return d === selected_link; })
-        .style('marker-start', function(d) { return d.left ? 'url(#start-arrow)' : ''; })
-        .style('marker-end', function(d) { return d.right ? 'url(#end-arrow)' : ''; });
+    path.classed('selected', isSelected)
+        .style('marker-start', isLeftTrue)
+        .style('marker-end', isRightTrue);
 
 
     // add new links
@@ -173,9 +187,9 @@ function restart() {
 
     // console.log('link is ' + link);
     link.attr('class', 'link')
-        .classed('selected', function(d) { return d === selected_link; })
-        .style('marker-start', function(d) { return d.left ? 'url(#start-arrow)' : ''; })
-        .style('marker-end', function(d) { return d.right ? 'url(#end-arrow)' : ''; })
+        .classed('selected', isSelected)
+        .style('marker-start', isLeftTrue)
+        .style('marker-end', isRightTrue)
         .on('mouseover', tip_edge.show)
         .on('mouseout', tip_edge.hide)
         .on('mousedown', function(d) {
@@ -194,13 +208,17 @@ function restart() {
 
     // circle (node) group
     // NB: the function arg is crucial here! nodes are known by id, not by index!
-    circle = circle.data(nodes, function(d) { return d.id; });
+    circle = circle.data(nodes, function(d) {return d.id});
+
+    //TODO: think about naming
+    var fillColor = function(d) {return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id)};
+    var isReflexive = function(d) {return d.reflexive};
 
     // debugger;
     // update existing nodes (reflexive & selected visual states)
     circle.selectAll('circle')
-        .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
-        .classed('reflexive', function(d) { return d.reflexive; });
+        .style('fill', fillColor)
+        .classed('reflexive', isReflexive);
 
     // add new nodes
     var g = circle.enter().append('svg:g');
@@ -212,9 +230,9 @@ function restart() {
     g.append('svg:circle')
         .attr('class', 'node')
         .attr('r', 12)
-        .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
-        .style('stroke', function(d) { return d3.rgb(colors(d.id)).darker().toString(); })
-        .classed('reflexive', function(d) { return d.reflexive; })
+        .style('fill', fillColor)
+        .style('stroke', function(d) {return d3.rgb(colors(d.id)).darker().toString()})
+        .classed('reflexive', isReflexive)
         .on('mouseover', function(d) {
             tip_node.show(d);
             if (!mousedown_node || d === mousedown_node) return;
@@ -304,7 +322,7 @@ function restart() {
         .attr('x', 0)
         .attr('y', 4)
         .attr('class', 'id')
-        .text(function(d) { return d.id; });
+        .text(function(d) {return d.id});
 
     // remove old nodes
     circle.exit().remove();
@@ -361,10 +379,10 @@ function mouseup() {
 
 function spliceLinksForNode(node) {
     var toSplice = links.filter(function(l) {
-        return (l.source === node || l.target === node);
+        return l.source === node || l.target === node;
     });
 
-    toSplice.map(function(l) {
+    toSplice.forEach(function(l) {
         links.splice(links.indexOf(l), 1);
     });
 }
@@ -378,8 +396,7 @@ function keydown() {
     if (lastKeyDown !== -1) return;
     lastKeyDown = d3.event.keyCode;
 
-    // ctrl
-    if (d3.event.keyCode === 17) {
+    if (d3.event.keyCode === KEY.ctrl) {
         circle.call(force.drag);
         svg.classed('ctrl', true);
     }
@@ -387,8 +404,8 @@ function keydown() {
     if (!selected_node && !selected_link) return;
 
     switch (d3.event.keyCode) {
-        case 8: // backspace
-        case 46: // delete
+        case KEY.backspace:
+        case KEY.delete:
             if(selected_node) {
                 nodes.splice(nodes.indexOf(selected_node), 1);
                 spliceLinksForNode(selected_node);
@@ -400,7 +417,7 @@ function keydown() {
             selected_node = null;
             restart();
         break;
-        case 66: // B
+        case KEY.B:
             if (selected_link) {
                 // set link direction to both left and right
                 selected_link.left = true;
@@ -409,7 +426,7 @@ function keydown() {
 
             restart();
         break;
-        case 76: // L
+        case KEY.L:
             if (selected_link) {
                 // set link direction to left only
                 selected_link.left = true;
@@ -417,7 +434,7 @@ function keydown() {
             }
             restart();
         break;
-        case 82: // R
+        case KEY.R:
             if(selected_node) {
                 // toggle node reflexivity
                 selected_node.reflexive = !selected_node.reflexive;
@@ -434,8 +451,7 @@ function keydown() {
 function keyup() {
     lastKeyDown = -1;
 
-    // ctrl
-    if(d3.event.keyCode === 17) {
+    if(d3.event.keyCode === KEY.ctrl) {
         circle
             .on('mousedown.drag', null)
             .on('touchstart.drag', null);
@@ -444,7 +460,8 @@ function keyup() {
 }
 
 function indexFromObjectArr(objArr, proper, val) {
-    return objArr.map(function(obj) { return obj[proper]; }).indexOf(val);
+    //TODO: reduce using array functions by using proper method
+    return objArr.map(function(obj) {return obj[proper]}).indexOf(val);
 }
 
 function getGlobalNetwork() {
@@ -452,12 +469,14 @@ function getGlobalNetwork() {
         $.getJSON(
             "/globalNetwork",
             function (data) {
-                nodes = data.nodes.map(function(node) { return JSON.parse(node); });
+                nodes = data.nodes.map(function(node) {return JSON.parse(node)});
                 lastNodeId = nodes[nodes.length - 1].id;
-                links = data.links.map(function (link) { return JSON.parse(link); });
-                links.forEach(function(link, index, arr) {
-                    link.source = nodes[indexFromObjectArr(nodes, 'id', link.source)];
-                    link.target = nodes[indexFromObjectArr(nodes, 'id', link.target)];
+
+                links = data.links.map(function (link) {
+                    var node = JSON.parse(link)
+                    node.source = nodes[indexFromObjectArr(nodes, 'id', node.source)];
+                    node.target = nodes[indexFromObjectArr(nodes, 'id', node.target)];
+                    return node;
                 });
             }
         ))
@@ -492,13 +511,16 @@ function getGlobalNetwork() {
     });
 }
 
-// app starts here
-svg.on('mousedown', mousedown)
-    .on('mousemove', mousemove)
-    .on('mouseup', mouseup);
+function startApp() {
+    svg.on('mousedown', mousedown)
+        .on('mousemove', mousemove)
+        .on('mouseup', mouseup);
 
-d3.select(window)
-    .on('keydown', keydown)
-    .on('keyup', keyup);
+    d3.select(window)
+        .on('keydown', keydown)
+        .on('keyup', keyup);
 
-getGlobalNetwork();
+    getGlobalNetwork();
+}
+
+startApp();
