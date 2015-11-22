@@ -1,8 +1,9 @@
 // set up SVG for D3, parameters:
-var width  = 960,
-    height = 500,
+var width  = 1300,
+    height = 700,
     colors = d3.scale.category10();
 var nodesJsonPath = '/globalNetwork';
+var getTableWays = '/tableOfWay';
 
 //comon used variables:
 var body = d3.select('body');
@@ -24,18 +25,31 @@ var selected_node = null,
     mouseup_node = null;
 
 function showTableWays(id) {
-    //send GET request for table with proper id
-    fillTableWays(id);
-    tip_node.hide();
-    $('#tableWays').dialog('open');
+    $.when(
+        $.ajax({
+            url: getTableWays,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ 'id': id }),
+            dataType: 'json',
+            error: function (err) {
+                alert('Table fucked up!')
+            },
+            success: function (json_table) {
+                return json_table;
+            }})).
+        done(function (table) {
+            fillTableWays(table);
+            tip_node.hide();
+            $('#tableWays').dialog('open');
+    });
 }
 
-function fillTableWays(id) {
-    var theData = [[1, 2], [3, 4], [5, 6]];
+function fillTableWays(table_data) {
     var table = body.select('#tableWays').append('table');
 
     table.selectAll('tr')
-        .data(theData)
+        .data(table_data)
         .enter()
         .append('tr')
         .selectAll('td')

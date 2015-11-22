@@ -24,6 +24,7 @@ class GlobalNetwork():
         connections_number = get_all_connections_number(self.reg_network_num, average_level=2.5, element_in_network=7)
         self.elements = [RegionalNetwork(x * 7, connections_number[x]) for x in xrange(self.reg_network_num)]
         self.make_gateway()
+        self.fake_gateway_connections()
         for reg_network in self.elements:
             reg_network.set_all_connection()
 
@@ -53,3 +54,25 @@ class GlobalNetwork():
     def to_json(self):
         return json.dumps({'nodes': self.reduce_lst('elements2json'),
                            'links': self.reduce_lst('links2json')})
+
+    def table_way(self, id_number):
+        return json.dumps(self.get_reg_network(id_number).table_of_ways(id_number))
+
+    def fake_gateway_connections(self):
+        """
+        Add all gateway connections to each regional network.
+        It's simplify building table of ways.
+        :return: None
+        """
+        all_connections = reduce(lambda res, network: res + network.connections, self.elements, [])
+        for reg_network in self.elements:
+            reg_network.set_fake_gateway(all_connections)
+
+    def sequence_sending(self, id_number):
+        return json.dumps(self.get_reg_network(id_number).sequence_sending(id_number))
+
+    def get_reg_network(self, id_number):
+        for reg_network in self.elements:
+            if reg_network.has_element_p(id_number):
+                return reg_network
+
