@@ -59,43 +59,49 @@ function fillTableWays(table_data) {
         .text(function(d, y) {return d});
 }
 
-var tip_node = d3.tip()
+function createTooltip(htmlFunction) {
+    return d3.tip()
         .attr('class', 'd3-tip')
         .offset([-10, 0])
-        .html(function(d) {
-            if (body.select('#tableWays').empty()) {
-                body.append('div').attr('id', 'tableWays').attr('title', 'Table of ways');
-            }
- 
-            $(function() {
-                $('#tableWays').dialog({
-                    autoOpen: false,
-                    show: {
-                        effect: 'blind',
-                        duration: 1000
-                    },
-                    hide: {
-                        effect: 'explode',
-                        duration: 1000
-                    }
-                });
-            });
+        .html(htmlFunction);
+}
 
-            return buttonTemplate.replace('{id}', d.id);
+var tip_node = createTooltip(function(d) {
+        if (body.select('#tableWays').empty()) {
+            body.append('div').attr({
+                id: 'tableWays',
+                title: 'Table of ways'
+            });
+        }
+
+        $(function() {
+            $('#tableWays').dialog({
+                autoOpen: false,
+                show: {
+                    effect: 'blind',
+                    duration: 1000
+                },
+                hide: {
+                    effect: 'explode',
+                    duration: 1000
+                }
+            });
         });
 
-var tip_edge = d3.tip()
-    .attr('class', 'd3-tip')
-    .offset([-10, 0])
-    .html(function(d) {
+        return buttonTemplate.replace('{id}', d.id);
+    });
+
+var tip_edge = createTooltip(function(d) {
         return 'type: ' + d.type + ' weight: ' + d.weight;
     });
 
 var svg = body
     .append('svg')
-    .attr('oncontextmenu', 'return false')
-    .attr('width', width)
-    .attr('height', height);
+    .attr({
+        oncontextmenu: 'return false',
+        width: width,
+        height: height
+    });
   
 // set up initial nodes and links
 //  - nodes are known by 'id', not by index in array.
@@ -108,37 +114,41 @@ var nodes = [-1],
 var force = d3.layout.force()
 
 function defineArrowMarkers() {
-    svg.append('svg:defs')
-        .append('svg:marker')
-            .attr('id', 'end-arrow')
-            .attr('viewBox', '0 -5 10 10')
-            .attr('refX', 6)
-            .attr('markerWidth', 3)
-            .attr('markerHeight', 3)
-            .attr('orient', 'auto')
-        .append('svg:path')
-            .attr('d', 'M0,-5L10,0L0,5')
-            .attr('fill', '#000');
+    function createArrow(markerParam, pathD) {
+        Object.assign(markerParam, {
+            viewBox: '0 -5 10 10',
+            markerWidth: 3,
+            markerHeight: 3,
+            orient: 'auto'
+        });
 
-    svg.append('svg:defs')
-        .append('svg:marker')
-            .attr('id', 'start-arrow')
-            .attr('viewBox', '0 -5 10 10')
-            .attr('refX', 4)
-            .attr('markerWidth', 3)
-            .attr('markerHeight', 3)
-            .attr('orient', 'auto')
-        .append('svg:path')
-            .attr('d', 'M10,-5L0,0L10,5')
-            .attr('fill', '#000');
+        svg.append('svg:defs')
+            .append('svg:marker').attr(markerParam)
+            .append('svg:path').attr({
+                fill: '#000',
+                d: pathD
+            });
+    }
+
+    createArrow({
+        id: 'end-arrow',
+        refX: 6
+    }, 'M0,-5L10,0L0,5');
+
+    createArrow({
+        id: 'start-arrow',
+        refX: 4
+    }, 'M10,-5L0,0L10,5');
 }
 
 defineArrowMarkers();
 
 // line displayed when dragging new nodes
 var drag_line = svg.append('svg:path')
-    .attr('class', 'link dragline hidden')
-    .attr('d', 'M0,0L0,0');
+    .attr({
+        class: 'link dragline hidden',
+        d: 'M0,0L0,0'
+    });
 
 // handles to link and node element groups
 var path = svg.append('svg:g').selectAll('path'),
@@ -213,9 +223,11 @@ function removeOldLinks() {
 
 function showNodeIds() {
     g.append('svg:text')
-        .attr('x', 0)
-        .attr('y', 4)
-        .attr('class', 'id')
+        .attr({
+            x: 0,
+            y: 4,
+            class: 'id'
+        })
         .text(function(d) {return d.id});
 }
 
@@ -253,8 +265,10 @@ function restart() {
         g.call(tip_node);
     }
     g.append('svg:circle')
-        .attr('class', 'node')
-        .attr('r', 12)
+        .attr({
+            class: 'node',
+            r: 12
+        })
         .style('fill', fillColor)
         .style('stroke', function(d) {return d3.rgb(colors(d.id)).darker().toString()})
         .classed('reflexive', isReflexive)
@@ -291,7 +305,7 @@ function restart() {
 
             restart();
         })
-        .on('mouseup', function(d) {
+        .on('mouseup', function(node) {
             if(!mousedown_node) return;
 
             // needed by FF
@@ -300,7 +314,7 @@ function restart() {
                 .style('marker-end', '');
 
             // check for drag-to-self
-            mouseup_node = d;
+            mouseup_node = node;
             if (mouseup_node === mousedown_node) {
                 resetMouseVars();
                 return;
@@ -323,10 +337,9 @@ function restart() {
                 direction = 'left';
             }
 
-            //TODO: use Array.find method instead of Array.filter, but check if it is available before it (in other case: use es-shim)
-            var link = links.filter(function(l) {
+            var link = links.find(function(l) {
                 return l.source === source && l.target === target;
-            })[0];
+            });
 
             if (link) {
                 link[direction] = true;
@@ -344,9 +357,11 @@ function restart() {
 
     // showNodeIds();
     g.append('svg:text')
-        .attr('x', 0)
-        .attr('y', 4)
-        .attr('class', 'id')
+        .attr({
+            x: 0,
+            y: 4,
+            class: 'id'
+        })
         .text(function(d) {return d.id});
     
     removeOldNodes();
@@ -488,6 +503,18 @@ function indexFromObjectArr(objArr, proper, val) {
     return objArr.map(function(obj) {return obj[proper]}).indexOf(val);
 }
 
+//TODO: rename me or not
+function calculateForce() {
+    force = d3.layout.force()
+        .nodes(nodes)
+        .links(links)
+        .size([width, height])
+        .linkDistance(150)
+        .charge(-500)
+        .on('tick', tick)
+    restart();
+}
+
 function getGlobalNetwork() {
     $.when(
         $.getJSON(
@@ -504,17 +531,9 @@ function getGlobalNetwork() {
                 });
             }
         ))
-    .done(function(not_used) {
-	force = d3.layout.force()
-	    .nodes(nodes)
-	    .links(links)
-	    .size([width, height])
-	    .linkDistance(150)
-	    .charge(-500)
-	    .on('tick', tick)
-	restart();
-    });
+    .done(calculateForce);
 }
+
 
 function startApp() {
     svg.on('mousedown', mousedown)
