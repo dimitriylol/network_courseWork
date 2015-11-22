@@ -46,7 +46,10 @@ function showTableWays(id) {
 }
 
 function fillTableWays(table_data) {
-    var table = body.select('#tableWays').append('table');
+    var table = body.select('#tableWays');
+    if (table.select('table'))
+        table.select('table').remove();
+    table = table.append('table');
 
     table.selectAll('tr')
         .data(table_data)
@@ -56,7 +59,7 @@ function fillTableWays(table_data) {
         .data(function(d) {return d})
         .enter()
         .append('td')
-        .text(function(d, y) {return d});
+        .text(function(d) {return d});
 }
 
 function createTooltip(htmlFunction) {
