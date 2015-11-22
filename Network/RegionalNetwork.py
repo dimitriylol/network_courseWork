@@ -32,6 +32,20 @@ def min_transit_from_sequence(sequence_sending):
     return map(lambda key: (key, table_min_transit[key]), table_min_transit)
 
 
+def time_sending(shortest_weight, information_length, message_len, delay=0):
+    """
+    2000 is max length of packet, that can receive element of network
+    :param information_length:
+    :param shortest_weight:
+    :param message_len:
+    :param delay:
+    :return:
+    """
+    package_num = round(message_len / float(information_length))
+    result = package_num * shortest_weight
+    return result + delay
+
+
 class RegionalNetwork:
     def __init__(self, start_id, connections_number=0):
         self.elements_num = 7
@@ -116,3 +130,27 @@ class RegionalNetwork:
     def sequence_sending(self, id_start):
         self.about_ways.connections = self.connections + self.fake_gateway_connections
         return self.about_ways.sequence_sending(id_start)
+
+    def send_message(self, id_number, message_len):
+        header_length = 100
+        package_length_lst = (1000, 1500, 1900)
+
+        send_table_result = []
+        shortest_table = shortest_ways_from_sequence(self.sequence_sending(id_number))
+
+        for pair in shortest_table:
+            send_table_result.append({'id': pair[0],
+                                      'logical_connection': map(lambda package_length: (package_length,
+                                                                                        time_sending(
+                                                                                            pair[1],
+                                                                                            package_length - header_length,
+                                                                                            message_len,
+                                                                                            delay=4)),
+                                                                package_length_lst),
+                                      'datagram_method': map(lambda package_length: (package_length,
+                                                                                     time_sending(
+                                                                                         pair[1],
+                                                                                         package_length - header_length,
+                                                                                         message_len)),
+                                                             package_length_lst)})
+        return {'send_table': send_table_result, 'max_length_packet': 2000}

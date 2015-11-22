@@ -4,12 +4,16 @@ var width  = 1300,
     colors = d3.scale.category10();
 var nodesJsonPath = '/globalNetwork';
 var getTableWays = '/tableOfWay';
-var getSequenceSending = '/sequenceSending'
+var getSequenceSending = '/sequenceSending';
+var getMessageSending = '/sendMessage';
 
 //comon used variables:
 var body = d3.select('body');
+// TODO: fetch all button to buttonTemplate with fucntion that generate them
+var buttonTemplate = '<button id=\'{button_id}\' onclick=\'{func_to_call}\'"> \'{text}\' </button>'
 var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
-var buttonSequenceTemplate = '<button id="showTable" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
+var buttonSequenceTemplate = '<button id="showSequence" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
+var buttonSendingTemplate = '<button  id="showSending" onclick="showSendingMessage(\'{id}\', \'{len}\')">Show sending</button>';
 var KEY = {
     backspace: 8,
     delete: 46,
@@ -19,6 +23,12 @@ var KEY = {
     ctrl: 17
 };
 
+function createButtonString(button_id, func_to_call, text) {
+    return buttonTemplate.replace('{button_id}', button_id)
+                         .replace('{func_to_call}', func_to_call)
+                         .replace('{text}', text)
+}
+
 // mouse event vars
 var selected_node = null,
     selected_link = null,
@@ -26,13 +36,13 @@ var selected_node = null,
     mousedown_node = null,
     mouseup_node = null;
 
-function sendingRequest(url_request, id, done_function) {
+function sendingRequest(url_request, objToSend, done_function) {
     $.when(
         $.ajax({
             url: url_request,
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ 'id': id }),
+            data: JSON.stringify(objToSend),
             dataType: 'json',
             error: function (err) {
                 alert('Request fucked up!')
@@ -45,14 +55,55 @@ function sendingRequest(url_request, id, done_function) {
     });
 }
 
+function showSendingMessage(id, message_len) {
+    sendingRequest(getMessageSending, { 'id': id, 'message_len': message_len },
+        function (sendTable) {
+            // TODO: refactor this shit
+            var table = body.select('#tableWays');
+            if (table.select('table'))
+                table.selectAll("*").remove();
+            fillTableSending(sendTable.send_table);
+            tip_node.hide();
+            $('#tableWays').dialog('open');
+        })
+}
+
+function fillTableSending(sendTable) {
+    var table = body.select('#tableWays').append('table');
+    var packet_len = sendTable[0].logical_connection.map(function (elem, index, array) {
+        return elem[0];
+    });
+    var tableHead = ['id']
+    packet_len.forEach(function(obj) {
+        tableHead.push('logical connect ' + obj);
+    })
+    packet_len.forEach(function(obj) {
+        tableHead.push('datagram ' + obj);
+    })
+    fillTableHead(table, tableHead);
+    var tableInf = [];
+    var index_id = -1;
+    sendTable.forEach(function(info_for_id) {
+        tableInf.push([info_for_id.id]);
+        index_id++;
+        info_for_id.logical_connection.forEach(function (pair) {
+            tableInf[index_id].push(pair[1])
+        });
+        info_for_id.datagram_method.forEach(function (pair) {
+            tableInf[index_id].push(pair[1])
+        });
+    })
+    fillTable(table, tableInf);
+}
+
 function showSequenceSending(id) {
-    sendingRequest(getSequenceSending, id, function(sequence) {
+    sendingRequest(getSequenceSending, { 'id': id }, function(sequence) {
        console.log('sequence: ' + sequence);
     });
 }
 
 function showTableWays(id) {
-    sendingRequest(getTableWays, id, function(table_data) {
+    sendingRequest(getTableWays, { 'id': id }, function(table_data) {
         var table = body.select('#tableWays');
         if (table.select('table'))
             table.selectAll("*").remove();
@@ -61,7 +112,6 @@ function showTableWays(id) {
             arr.push(table_data.min_transit[index++][1]);
             return arr;
         }));
-        //fillTableWays(table_data.min_transit);
         tip_node.hide();
         $('#tableWays').dialog('open');
     });
@@ -101,9 +151,15 @@ function createTooltip(htmlFunction) {
         .html(htmlFunction);
 }
 
-function contentTooltip(id) {
-    return '<div id = contentTooltip><p>' + buttonTableTemplate.replace('{id}', id) + '</p><p>' +
-            buttonSequenceTemplate.replace('{id}', id) + '</p></div>';
+function contentTooltip(id, message_len) {
+    //var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
+//var buttonSequenceTemplate = '<button id="showSequence" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
+
+    return '<div id = contentTooltip><p>' +
+            buttonTableTemplate.replace('{id}', id) + '</p><p>' +
+            buttonSequenceTemplate.replace('{id}', id) + '</p><p>' +
+            buttonSendingTemplate.replace('{id}', id).replace('{len}', message_len) +
+            '</p></div>';
 }
 
 var tip_node = createTooltip(function(d) {
@@ -128,8 +184,13 @@ var tip_node = createTooltip(function(d) {
             });
         });
 
-        return contentTooltip(d.id);
+        return contentTooltip(d.id, getRandomInt(1000, 5000));
     });
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 
 var tip_edge = createTooltip(function(d) {
         return 'type: ' + d.type + ' weight: ' + d.weight;

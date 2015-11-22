@@ -33,6 +33,14 @@ def get_sending_sequence():
     id_number = int(request.get_json()['id'])
     return course_work.network.sequence_sending(id_number)
 
+
+@course_work.app.route('/sendMessage', methods=['POST'])
+def get_table_sending_message():
+    request_result = request.get_json()
+    return course_work.network.sending_message(int(request_result['id']),
+                                               int(request_result['message_len']))
+
+
 @course_work.app.route('/')
 def hello_world():
     return render_template('index.html')

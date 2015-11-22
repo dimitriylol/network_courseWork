@@ -76,3 +76,6 @@ class GlobalNetwork():
             if reg_network.has_element_p(id_number):
                 return reg_network
 
+    def sending_message(self, id_number, message_len):
+        return json.dumps(self.get_reg_network(id_number).send_message(id_number, message_len))
+
