@@ -4,9 +4,9 @@ from Network.NetworkElement import NetworkElement
 from Network.AboutWays import AboutWays
 
 
-def table_ways_from_sequence(sequence_sending):
+def shortest_ways_from_sequence(sequence_sending):
     table_shortest_ways = {}
-    for sender_dict in sequence_sending:        # I'm typing this nested loops and crying
+    for sender_dict in sequence_sending:  # I'm typing this nested loops and crying
         for sender_id in sender_dict:
             for receiver_id in sender_dict[sender_id]:
                 if receiver_id not in table_shortest_ways:
@@ -19,6 +19,17 @@ def table_ways_from_sequence(sequence_sending):
                     if way < table_shortest_ways[receiver_id]:
                         table_shortest_ways[receiver_id] = way
     return map(lambda key: (key, table_shortest_ways[key]), table_shortest_ways)
+
+
+# TODO: refactor this, extract common code from this function and shortest_ways_from_sequence
+def min_transit_from_sequence(sequence_sending):
+    table_min_transit = {}
+    for iteration, sender_dict in enumerate(sequence_sending):
+        for sender_id in sender_dict:
+            for receiver_id in sender_dict[sender_id]:
+                if receiver_id not in table_min_transit:
+                    table_min_transit[receiver_id] = iteration + 1
+    return map(lambda key: (key, table_min_transit[key]), table_min_transit)
 
 
 class RegionalNetwork:
@@ -95,7 +106,9 @@ class RegionalNetwork:
         return False
 
     def table_of_ways(self, id_start):
-        return table_ways_from_sequence(self.sequence_sending(id_start))
+        sequence_sending = self.sequence_sending(id_start)
+        return {'shortest': shortest_ways_from_sequence(sequence_sending),
+                'min_transit': min_transit_from_sequence(sequence_sending)}
 
     def set_fake_gateway(self, connections):
         self.fake_gateway_connections = connections
@@ -103,4 +116,3 @@ class RegionalNetwork:
     def sequence_sending(self, id_start):
         self.about_ways.connections = self.connections + self.fake_gateway_connections
         return self.about_ways.sequence_sending(id_start)
-

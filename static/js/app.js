@@ -4,10 +4,12 @@ var width  = 1300,
     colors = d3.scale.category10();
 var nodesJsonPath = '/globalNetwork';
 var getTableWays = '/tableOfWay';
+var getSequenceSending = '/sequenceSending'
 
 //comon used variables:
 var body = d3.select('body');
-var buttonTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
+var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
+var buttonSequenceTemplate = '<button id="showTable" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
 var KEY = {
     backspace: 8,
     delete: 46,
@@ -24,42 +26,72 @@ var selected_node = null,
     mousedown_node = null,
     mouseup_node = null;
 
-function showTableWays(id) {
+function sendingRequest(url_request, id, done_function) {
     $.when(
         $.ajax({
-            url: getTableWays,
+            url: url_request,
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ 'id': id }),
             dataType: 'json',
             error: function (err) {
-                alert('Table fucked up!')
+                alert('Request fucked up!')
             },
-            success: function (json_table) {
-                return json_table;
+            success: function (data) {
+                return data;
             }})).
-        done(function (table) {
-            fillTableWays(table);
-            tip_node.hide();
-            $('#tableWays').dialog('open');
+        done(function (respond_data) {
+            done_function(respond_data);
     });
 }
 
-function fillTableWays(table_data) {
-    var table = body.select('#tableWays');
-    if (table.select('table'))
-        table.select('table').remove();
-    table = table.append('table');
+function showSequenceSending(id) {
+    sendingRequest(getSequenceSending, id, function(sequence) {
+       console.log('sequence: ' + sequence);
+    });
+}
 
-    table.selectAll('tr')
-        .data(table_data)
+function showTableWays(id) {
+    sendingRequest(getTableWays, id, function(table_data) {
+        var table = body.select('#tableWays');
+        if (table.select('table'))
+            table.selectAll("*").remove();
+        var index = 0;
+        fillTableWays(table_data.shortest.map(function(arr) {
+            arr.push(table_data.min_transit[index++][1]);
+            return arr;
+        }));
+        //fillTableWays(table_data.min_transit);
+        tip_node.hide();
+        $('#tableWays').dialog('open');
+    });
+}
+
+function fillTable(selected_table, table_data) {
+    var row;
+    table_data.forEach(function(table_row, index, array) {
+        row = selected_table.append('tr')
+        row.selectAll('td')
+            .data(table_row)
+            .enter()
+            .append('td')
+            .text(function(d) { return d;})
+    });
+}
+
+function fillTableHead(select_table, header) {
+    select_table.append('tr')
+        .selectAll('th')
+        .data(header)
         .enter()
-        .append('tr')
-        .selectAll('td')
-        .data(function(d) {return d})
-        .enter()
-        .append('td')
-        .text(function(d) {return d});
+        .append('th')
+        .text(function(d) { return d; } )
+}
+
+function fillTableWays(table_data) {
+    var table = body.select('#tableWays').append('table');
+    fillTableHead(table, ['id', 'shortest way', 'min transit'])
+    fillTable(table, table_data);
 }
 
 function createTooltip(htmlFunction) {
@@ -67,6 +99,11 @@ function createTooltip(htmlFunction) {
         .attr('class', 'd3-tip')
         .offset([-10, 0])
         .html(htmlFunction);
+}
+
+function contentTooltip(id) {
+    return '<div id = contentTooltip><p>' + buttonTableTemplate.replace('{id}', id) + '</p><p>' +
+            buttonSequenceTemplate.replace('{id}', id) + '</p></div>';
 }
 
 var tip_node = createTooltip(function(d) {
@@ -91,7 +128,7 @@ var tip_node = createTooltip(function(d) {
             });
         });
 
-        return buttonTemplate.replace('{id}', d.id);
+        return contentTooltip(d.id);
     });
 
 var tip_edge = createTooltip(function(d) {
@@ -283,6 +320,7 @@ function restart() {
             d3.select(this).attr('transform', 'scale(1.1)');
         })
         .on('mouseout', function(d) {
+            //tip_node.hide(d);
             if(!mousedown_node || d === mousedown_node) return;
 
             // unenlarge target node

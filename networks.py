@@ -11,10 +11,10 @@ class CourseWork:
 
 course_work = CourseWork()
 
-tmp = course_work.network.sequence_sending(0)
-print tmp
-tmp = course_work.network.table_way(0)
-print tmp
+# tmp = course_work.network.sequence_sending(0)
+# print tmp
+# tmp = course_work.network.table_way(0)
+# print tmp
 
 
 @course_work.app.route('/globalNetwork', methods=['GET'])
@@ -28,11 +28,10 @@ def get_table_network_element():
     return course_work.network.table_way(id_number)
 
 
-@course_work.app.route('/sequence_sengind', methods=['POST'])
+@course_work.app.route('/sequenceSending', methods=['POST'])
 def get_sending_sequence():
     id_number = int(request.get_json()['id'])
     return course_work.network.sequence_sending(id_number)
-
 
 @course_work.app.route('/')
 def hello_world():
