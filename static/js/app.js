@@ -8,12 +8,14 @@ var getSequenceSending = '/sequenceSending';
 var getMessageSending = '/sendMessage';
 
 //comon used variables:
+var coordinates = [0, 0];
 var body = d3.select('body');
 // TODO: fetch all button to buttonTemplate with fucntion that generate them
 var buttonTemplate = '<button id=\'{button_id}\' onclick=\'{func_to_call}\'"> \'{text}\' </button>'
 var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
 var buttonSequenceTemplate = '<button id="showSequence" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
 var buttonSendingTemplate = '<button  id="showSending" onclick="showSendingMessage(\'{id}\', \'{len}\')">Show sending</button>';
+var checkboxTemplate = 'On/off: <input type="checkbox" id="elementPower" checked>'
 var KEY = {
     backspace: 8,
     delete: 46,
@@ -158,7 +160,8 @@ function contentTooltip(id, message_len) {
     return '<div id = contentTooltip><p>' +
             buttonTableTemplate.replace('{id}', id) + '</p><p>' +
             buttonSequenceTemplate.replace('{id}', id) + '</p><p>' +
-            buttonSendingTemplate.replace('{id}', id).replace('{len}', message_len) +
+            buttonSendingTemplate.replace('{id}', id).replace('{len}', message_len) + '</p><p>' +
+            checkboxTemplate +
             '</p></div>';
 }
 
@@ -375,13 +378,27 @@ function restart() {
         .classed('reflexive', isReflexive)
         .on('mouseover', function(d) {
             tip_node.show(d);
+            coordinates = d3.mouse(this).map(function(val, index, arr) {
+                return Math.abs(val);
+            });
             if (!mousedown_node || d === mousedown_node) return;
 
             // enlarge target node
             d3.select(this).attr('transform', 'scale(1.1)');
         })
         .on('mouseout', function(d) {
-            //tip_node.hide(d);
+            var new_coordinates = d3.mouse(this).map(function(val, index, arr) {
+                return Math.abs(val);
+            });
+            var This = this.cloneNode();
+            var hide_tooltip = setInterval(function() {
+                if (new_coordinates[1] - coordinates[1] < 0 ||
+                    new_coordinates[1] - coordinates[1] > 200 ||
+                    Math.abs(new_coordinates[0] - coordinates[0]) > 20) {
+                        tip_node.hide();
+                        clearInterval(hide_tooltip);
+                    }
+            }, 1000);
             if(!mousedown_node || d === mousedown_node) return;
 
             // unenlarge target node
