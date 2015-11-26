@@ -8,7 +8,7 @@ var getSequenceSending = '/sequenceSending';
 var getMessageSending = '/sendMessage';
 
 //comon used variables:
-var coordinates = [0, 0];
+var tip_edge_hide;
 var body = d3.select('body');
 // TODO: fetch all button to buttonTemplate with fucntion that generate them
 var buttonTemplate = '<button id=\'{button_id}\' onclick=\'{func_to_call}\'"> \'{text}\' </button>'
@@ -65,7 +65,6 @@ function showSendingMessage(id, message_len) {
             if (table.select('table'))
                 table.selectAll("*").remove();
             fillTableSending(sendTable.send_table);
-            tip_node.hide();
             $('#tableWays').dialog('open');
         })
 }
@@ -114,7 +113,7 @@ function showTableWays(id) {
             arr.push(table_data.min_transit[index++][1]);
             return arr;
         }));
-        tip_node.hide();
+        //tip_node.hide();
         $('#tableWays').dialog('open');
     });
 }
@@ -146,10 +145,11 @@ function fillTableWays(table_data) {
     fillTable(table, table_data);
 }
 
-function createTooltip(htmlFunction) {
+function createTooltip(id, htmlFunction) {
     return d3.tip()
         .attr('class', 'd3-tip')
-        .offset([-10, 0])
+        .attr('id', id)
+        .offset([-1, 0])
         .html(htmlFunction);
 }
 
@@ -165,39 +165,51 @@ function contentTooltip(id, message_len) {
             '</p></div>';
 }
 
-var tip_node = createTooltip(function(d) {
-        if (body.select('#tableWays').empty()) {
-            body.append('div').attr({
-                id: 'tableWays',
-                title: 'Table of ways'
-            });
-        }
+var tip_node = createTooltip('node', function(d) {
+    var tip = body.select('#node');
+    //TODO: check is useless???
+    if (!tip.empty())
+        tip.on('mouseleave', tip_node.hide);
 
-        $(function() {
-            $('#tableWays').dialog({
-                autoOpen: false,
-                show: {
-                    effect: 'blind',
-                    duration: 1000
-                },
-                hide: {
-                    effect: 'explode',
-                    duration: 1000
-                }
-            });
+    if (body.select('#tableWays').empty()) {
+        body.append('div').attr({
+            id: 'tableWays',
+            title: 'Table of ways'
         });
+    }
 
-        return contentTooltip(d.id, getRandomInt(1000, 5000));
+    $(function() {
+        $('#tableWays').dialog({
+            autoOpen: false,
+            show: {
+                effect: 'blind',
+                duration: 1000
+            },
+            hide: {
+                effect: 'explode',
+                duration: 1000
+            }
+        });
     });
+
+    return contentTooltip(d.id, getRandomInt(1000, 5000));
+});
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 
-var tip_edge = createTooltip(function(d) {
-        return 'type: ' + d.type + ' weight: ' + d.weight;
-    });
+var tip_edge = createTooltip('edge', function(d) {
+    var tip = body.select('#edge');
+    if (!tip.empty())
+        tip.on('mouseover', function(d) {
+            clearTimeout(tip_edge_hide);
+            tip_edge_hide = null;
+            })
+           .on('mouseleave', tip_edge.hide);
+    return 'type: ' + d.type + ' weight: ' + d.weight + '<br/>' + checkboxTemplate;
+});
 
 var svg = body
     .append('svg')
@@ -302,13 +314,18 @@ function addNewLinks() {
     var link = path.enter().append('svg:path');
     path.call(tip_edge);
 
-    // console.log('link is ' + link);
     link.attr('class', 'link')
         .classed('selected', isSelected)
         .style('marker-start', isLeftTrue)
         .style('marker-end', isRightTrue)
-        .on('mouseover', tip_edge.show)
-        .on('mouseout', tip_edge.hide)
+        .on('mouseover', function(d) {
+            tip_edge.show(d);
+        })
+        .on('mouseout', function (d) {
+            tip_edge_hide = setTimeout(function() {
+                    tip_edge.hide();
+            }, 2000);
+        })
         .on('mousedown', function(d) {
             if (d3.event.ctrlKey) return;
             // select link
@@ -378,27 +395,15 @@ function restart() {
         .classed('reflexive', isReflexive)
         .on('mouseover', function(d) {
             tip_node.show(d);
-            coordinates = d3.mouse(this).map(function(val, index, arr) {
-                return Math.abs(val);
-            });
+
             if (!mousedown_node || d === mousedown_node) return;
 
             // enlarge target node
             d3.select(this).attr('transform', 'scale(1.1)');
         })
         .on('mouseout', function(d) {
-            var new_coordinates = d3.mouse(this).map(function(val, index, arr) {
-                return Math.abs(val);
-            });
-            var This = this.cloneNode();
-            var hide_tooltip = setInterval(function() {
-                if (new_coordinates[1] - coordinates[1] < 0 ||
-                    new_coordinates[1] - coordinates[1] > 200 ||
-                    Math.abs(new_coordinates[0] - coordinates[0]) > 20) {
-                        tip_node.hide();
-                        clearInterval(hide_tooltip);
-                    }
-            }, 1000);
+            if (d3.event.relatedTarget != body.select('#node')[0][0])
+                tip_node.hide();
             if(!mousedown_node || d === mousedown_node) return;
 
             // unenlarge target node
