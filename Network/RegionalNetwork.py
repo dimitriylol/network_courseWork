@@ -1,4 +1,6 @@
 import random
+from collections import OrderedDict
+
 from Network.NetworkConnection import NetworkConnection
 from Network.NetworkElement import NetworkElement
 from Network.AboutWays import AboutWays
@@ -128,7 +130,8 @@ class RegionalNetwork:
         self.fake_gateway_connections = connections
 
     def sequence_sending(self, id_start):
-        self.about_ways.connections = self.connections + self.fake_gateway_connections
+        self.about_ways.connections = filter(lambda connection: connection.power, self.connections) + \
+                                      filter(lambda connection: connection.power, self.fake_gateway_connections)
         return self.about_ways.sequence_sending(id_start)
 
     def send_message(self, id_number, message_len):
@@ -154,3 +157,43 @@ class RegionalNetwork:
                                                                                          message_len)),
                                                              package_length_lst)})
         return {'send_table': send_table_result, 'max_length_packet': 2000}
+
+    def delete_element(self, id_number):
+        self.elements = filter(lambda element: not element.is_element_p(id_number), self.elements)
+        self.connections = filter(lambda connection: connection.not_connect_id_p(id_number), self.connections)
+        self.fake_gateway_connections = filter(lambda connection: connection.not_connect_id_p(id_number),
+                                               self.connections)
+
+    def delete_connection(self, source, target):
+        self.connections = filter(lambda connection: connection.is_connection_p(source, target), self.connections)
+
+    def add_element(self, id_number):
+        self.elements.append(NetworkElement(id_number))
+
+    def change_type(self, source, target, connection_type):
+        for connection in self.connections:
+            if connection.source == source and connection.target == target:
+                if connection.type_connection == connection_type:
+                    pass
+                elif connection_type == 1:
+                    connection.type_connection = connection_type
+                    connection.weight /= 1.5
+                elif connection_type == 1.5:
+                    connection.type_connection = connection_type
+                    connection.weight *= 1.5
+                return {'weight': connection.weight}
+        return False
+
+    def power_element(self, id_number, power):
+        for element in self.elements:
+            if element.id_number == id_number:
+                element.power = power
+        for connection in self.connections:
+            if connection.source == id_number:
+                connection.power = power
+
+    def power_connection(self, source, target, power):
+        for connection in self.connections:
+            if connection.is_connection_p(source, target):
+                connection.power = power
+

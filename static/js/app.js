@@ -6,6 +6,8 @@ var nodesJsonPath = '/globalNetwork';
 var getTableWays = '/tableOfWay';
 var getSequenceSending = '/sequenceSending';
 var getMessageSending = '/sendMessage';
+var powerElement = '/propertyElement';
+var powerConnection = '/propertiesConnection';
 
 //comon used variables:
 var tip_edge_hide;
@@ -15,7 +17,6 @@ var buttonTemplate = '<button id=\'{button_id}\' onclick=\'{func_to_call}\'"> \'
 var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
 var buttonSequenceTemplate = '<button id="showSequence" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
 var buttonSendingTemplate = '<button  id="showSending" onclick="showSendingMessage(\'{id}\', \'{len}\')">Show sending</button>';
-var checkboxTemplate = 'On/off: <input type="checkbox" id="elementPower" checked>'
 var KEY = {
     backspace: 8,
     delete: 46,
@@ -47,7 +48,7 @@ function sendingRequest(url_request, objToSend, done_function) {
             data: JSON.stringify(objToSend),
             dataType: 'json',
             error: function (err) {
-                alert('Request fucked up!')
+                alert('Request ' + url_request + ' fucked up!')
             },
             success: function (data) {
                 return data;
@@ -153,7 +154,12 @@ function createTooltip(id, htmlFunction) {
         .html(htmlFunction);
 }
 
-function contentTooltip(id, message_len) {
+function getCheckboxTemplate(decsription, power, id_dom) {
+    return decsription + '<input type="checkbox" id=' + id_dom + (function () { return power && 'checked' || '';})() +
+        '>';
+}
+
+function contentTooltip(id, message_len, power) {
     //var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\')">Get table</button>';
 //var buttonSequenceTemplate = '<button id="showSequence" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
 
@@ -161,7 +167,7 @@ function contentTooltip(id, message_len) {
             buttonTableTemplate.replace('{id}', id) + '</p><p>' +
             buttonSequenceTemplate.replace('{id}', id) + '</p><p>' +
             buttonSendingTemplate.replace('{id}', id).replace('{len}', message_len) + '</p><p>' +
-            checkboxTemplate +
+            getCheckboxTemplate('On/off:', power, '"elementPower"') +
             '</p></div>';
 }
 
@@ -169,8 +175,7 @@ var tip_node = createTooltip('node', function(d) {
     var tip = body.select('#node');
     //TODO: check is useless???
     if (!tip.empty())
-        tip.on('mouseleave', tip_node.hide);
-
+        tip.on('mouseleave', function() { setPower(tip, d.id); tip_node.hide(); });
     if (body.select('#tableWays').empty()) {
         body.append('div').attr({
             id: 'tableWays',
@@ -192,13 +197,39 @@ var tip_node = createTooltip('node', function(d) {
         });
     });
 
-    return contentTooltip(d.id, getRandomInt(1000, 5000));
+    return contentTooltip(d.id, getRandomInt(1000, 5000), d.power);
 });
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function setPower(tip_dom_element, id1, id2) {
+    var power = tip_dom_element.select('#elementPower')[0][0].checked;
+    var type_checkbox = tip_dom_element.select('#elementType');
+    var type = type_checkbox.empty() ? null : type_checkbox[0][0].checked && 'duplex' || 'half-duplex';
+    var is_element_p =   id2 &&
+                         function(element) {
+                            return element.source.id == id1 && element.target.id == id2 ||
+                                   element.source.id == id2 && element.target.id == id1;
+                         } ||
+                         function(element) {
+                            return element.id == id1;
+                         };
+    sendingRequest( id2 && powerConnection || powerElement,
+                    { id1: id1, id2: id2, power: power, type: type },
+                    function (data) {
+                    (function() { return id2 && links || nodes; })().forEach(
+                        function(elem, index, arr) {
+                            if (is_element_p(elem))
+                                elem.power = power;
+                                if (elem.type) {
+                                    elem.type = type;
+                                    elem.weight = data.weight;
+                                }
+                        });
+                    });
+}
 
 var tip_edge = createTooltip('edge', function(d) {
     var tip = body.select('#edge');
@@ -207,8 +238,14 @@ var tip_edge = createTooltip('edge', function(d) {
             clearTimeout(tip_edge_hide);
             tip_edge_hide = null;
             })
-           .on('mouseleave', tip_edge.hide);
-    return 'type: ' + d.type + ' weight: ' + d.weight + '<br/>' + checkboxTemplate;
+           .on('mouseleave', function() {
+               setPower(tip, d.source.id, d.target.id);
+               tip_edge.hide();
+           });
+    return getCheckboxTemplate('Checked - duplex, not checked - half-duplex',
+                                d.type === 'duplex' ? true : false,
+                                '"elementType"') + '<br/>' +
+        ' weight: ' + d.weight + '<br/>' + getCheckboxTemplate('On/off: ', d.power, '"elementPower"');
 });
 
 var svg = body
@@ -326,16 +363,17 @@ function addNewLinks() {
                     tip_edge.hide();
             }, 2000);
         })
-        .on('mousedown', function(d) {
-            if (d3.event.ctrlKey) return;
-            // select link
-            mousedown_link = d;
-            selected_link = mousedown_link === selected_link
-                ? null
-                : mousedown_link;
-            selected_node = null;
-            restart();
-        });
+        //.on('mousedown', function(d) {
+        //    if (d3.event.ctrlKey) return;
+        //    // select link
+        //    mousedown_link = d;
+        //    selected_link = mousedown_link === selected_link
+        //        ? null
+        //        : mousedown_link;
+        //    selected_node = null;
+        //    restart();
+        //})
+        ;
 }
 
 function removeOldLinks() {

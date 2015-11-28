@@ -11,10 +11,9 @@ class CourseWork:
 
 course_work = CourseWork()
 
-# tmp = course_work.network.sequence_sending(0)
-# print tmp
-# tmp = course_work.network.table_way(0)
-# print tmp
+
+# print course_work.network.sequence_sending(13)
+# print course_work.network.change_type(0, 1, 'half-duplex')
 
 
 @course_work.app.route('/globalNetwork', methods=['GET'])
@@ -39,6 +38,42 @@ def get_table_sending_message():
     request_result = request.get_json()
     return course_work.network.sending_message(int(request_result['id']),
                                                int(request_result['message_len']))
+
+
+@course_work.app.route('/propertyElement', methods=['POST'])
+def power_element():
+    """
+    :return: JSON {'result': 'OK'}
+    """
+    request_result = request.get_json()
+    print request_result
+    return course_work.network.power_element(int(request_result['id1']), request_result['power'])
+
+
+@course_work.app.route('/propertiesConnection', methods=['POST'])
+def power_connection():
+    """
+    :return: JSON {'result': 'OK'}
+    """
+    json_request = request.get_json()
+    print json_request
+    return course_work.network.properties_connection(json_request)
+
+
+@course_work.app.route('/addElement', methods=['POST'])
+def add_element():
+    """
+    :return: JSON {'result': 'OK'}
+    """
+    return course_work.network.disable_element(int(request.get_json()['id']))
+
+
+@course_work.app.route('/addConnection', methods=['POST'])
+def add_connection():
+    """
+    :return: JSON {'result': 'OK'}
+    """
+    return course_work.network.add_connection(int(request.get_json()['source']), int(request.get_json()['target']))
 
 
 @course_work.app.route('/')

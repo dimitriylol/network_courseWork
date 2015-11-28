@@ -18,13 +18,18 @@ def get_all_connections_number(reg_network, average_level, element_in_network):
     return res
 
 
+def number_reg_network(id_number):
+    return id_number % 7
+
+
 class GlobalNetwork():
     def __init__(self):
         self.reg_network_num = 4
         connections_number = get_all_connections_number(self.reg_network_num, average_level=2.5, element_in_network=7)
         self.elements = [RegionalNetwork(x * 7, connections_number[x]) for x in xrange(self.reg_network_num)]
         self.make_gateway()
-        self.fake_gateway_connections()
+        self.fake_gateway_connections = None
+        self.set_fake_gateway_connections()
         for reg_network in self.elements:
             reg_network.set_all_connection()
 
@@ -58,15 +63,15 @@ class GlobalNetwork():
     def table_way(self, id_number):
         return json.dumps(self.get_reg_network(id_number).table_of_ways(id_number))
 
-    def fake_gateway_connections(self):
+    def set_fake_gateway_connections(self):
         """
         Add all gateway connections to each regional network.
         It's simplify building table of ways.
         :return: None
         """
-        all_connections = reduce(lambda res, network: res + network.connections, self.elements, [])
+        self.fake_gateway_connections = reduce(lambda res, network: res + network.connections, self.elements, [])
         for reg_network in self.elements:
-            reg_network.set_fake_gateway(all_connections)
+            reg_network.set_fake_gateway(self.fake_gateway_connections)
 
     def sequence_sending(self, id_number):
         return json.dumps(self.get_reg_network(id_number).sequence_sending(id_number))
@@ -79,3 +84,33 @@ class GlobalNetwork():
     def sending_message(self, id_number, message_len):
         return json.dumps(self.get_reg_network(id_number).send_message(id_number, message_len))
 
+    def power_element(self, id_number, power):
+        for reg_network in self.elements:
+            reg_network.power_element(id_number, power)
+        return json.dumps({'result': 'OK'})
+
+    def power_connection(self, source, target, power):
+        for reg_network in self.elements:
+            reg_network.power_connection(source, target, power)
+        return {'connection_changed': 'OK'}
+
+    # def add_connection(self, source, target):
+    #     self.elements[number_reg_network(source)].set_connection(source, target)
+    #     return json.dumps({'result': 'OK'})
+    #
+    # def add_element(self, id_number):
+    #     self.elements[number_reg_network(id_number)].add_element(id_number)
+    #     return json.dumps({'result': 'OK'})
+
+    def change_type(self, source, target, connection_type):
+        connect_type = connection_type == 'duplex' and 1 or 1.5
+        for reg_network in self.elements:
+            tmp = reg_network.change_type(source, target, connect_type)
+            if tmp:
+                return tmp
+
+    def properties_connection(self, json_request):
+        return json.dumps(dict(self.power_connection(int(json_request['id1']), int(json_request['id2']),
+                                                     json_request['power']),
+                               **self.change_type(int(json_request['id1']), int(json_request['id2']),
+                                                  json_request['type'])))
