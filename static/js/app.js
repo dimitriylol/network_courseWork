@@ -100,7 +100,25 @@ function fillTableSending(sendTable) {
 
 function showSequenceSending(id) {
     sendingRequest(getSequenceSending, { 'id': id }, function(sequence) {
-       console.log('sequence: ' + sequence);
+       var i = 0;
+       var paint = function (iter) {
+           if (sequence[iter]) {
+               body.selectAll('path').style('stroke', 'black');
+               for (var source in sequence[iter]) {
+                   body.selectAll('[source="' + source + '"], [target="' + source + '"]')
+                       .style('stroke', function (d) {
+                           return (sequence[iter][source][d.source.id] || sequence[iter][source][d.target.id]) ?
+                               'blue' :
+                               'black';
+                       })
+               }
+           }
+            else {
+               clearInterval(paint_time);
+               body.selectAll('path').style('stroke', 'black');
+            }
+        }
+        var paint_time = setInterval(function () { paint(i++); }, 1000);
     });
 }
 
@@ -352,6 +370,8 @@ function addNewLinks() {
     path.call(tip_edge);
 
     link.attr('class', 'link')
+        .attr('source', function(d) { return d.source.id; })
+        .attr('target', function(d) { return d.target.id; })
         .classed('selected', isSelected)
         .style('marker-start', isLeftTrue)
         .style('marker-end', isRightTrue)

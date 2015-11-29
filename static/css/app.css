@@ -19,6 +19,13 @@ path.link {
   cursor: default;
 }
 
+path.sending {
+  fill: none;
+  stroke: blue;
+  stroke-width: 4px;
+  cursor: default;
+}
+
 svg:not(.active):not(.ctrl) path.link {
   cursor: pointer;
 }
