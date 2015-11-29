@@ -51,7 +51,7 @@ def time_sending(shortest_weight, information_length, message_len, delay=0):
 class RegionalNetwork:
     def __init__(self, start_id, connections_number=0):
         self.elements_num = 7
-        self.about_ways = AboutWays(start_id, start_id + self.elements_num)
+        self.about_ways = AboutWays()
         self.fake_gateway_connections = None
         self.connections_weight = (1, 2, 3, 5, 7, 8, 12, 15, 21, 26)
         self.connections_number = connections_number
@@ -130,6 +130,7 @@ class RegionalNetwork:
         self.fake_gateway_connections = connections
 
     def sequence_sending(self, id_start):
+        self.about_ways.num_elements = self.elements_num + 3    # because one more 3 gateway elements
         self.about_ways.connections = filter(lambda connection: connection.power, self.connections) + \
                                       filter(lambda connection: connection.power, self.fake_gateway_connections)
         return self.about_ways.sequence_sending(id_start)

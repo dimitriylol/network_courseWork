@@ -25,16 +25,18 @@ def get_sender_dict(prev_iteration):
 
 
 class AboutWays(object):
-    def __init__(self, id_num_start, id_num_end):
-        self.set_id = set((x for x in xrange(id_num_start, id_num_end)))
+    def __init__(self):
+        self.num_elements = -1
         self.connections = []
 
     def sequence_sending(self, id_num):
         sequence = [{'init': {id_num: 0}}]
         passed_elements = set()
-        while passed_elements.__len__() < self.set_id.__len__():   # maybe wrong
+        while passed_elements.__len__() < self.num_elements:
+            # maybe wrong
             sequence.append(self.dict_connected_elements(sequence[-1], passed_elements))
             passed_elements.update(set((elem for elem in sequence[-1])))
+        print sequence[1:]
         return sequence[1:]
 
     def dict_connected_elements(self, prev_iteration, passed_elements):
@@ -48,6 +50,7 @@ class AboutWays(object):
             for id_num in prev_iteration[prev_sender]:
                 if id_num not in passed_elements:
                     iteration[id_num] = self.connected_to(id_num, get_sender_dict(prev_iteration))
+        print iteration
         return iteration
 
     def connected_to(self, id_num, forbidden_elements):
