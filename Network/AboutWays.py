@@ -3,7 +3,6 @@ def connected_p(connection, id_num, sender_dict):
         return connection.target
     if connection.target == id_num and connection.source not in sender_dict[id_num]:
         return connection.source
-    return False
 
 
 def connection_information(connection, id_num):
@@ -30,13 +29,14 @@ class AboutWays(object):
         self.connections = []
 
     def sequence_sending(self, id_num):
-        sequence = [{'init': {id_num: 0}}]
+        sequence = [{'init': {id_num: -1}}]
         passed_elements = set()
-        while passed_elements.__len__() < self.num_elements:
-            # maybe wrong
+        print "in sequence sending conenctions"
+        for connect in self.connections:
+            print connect.to_json()
+        while passed_elements.__len__() < self.num_elements:    # maybe wrong
             sequence.append(self.dict_connected_elements(sequence[-1], passed_elements))
             passed_elements.update(set((elem for elem in sequence[-1])))
-        print sequence[1:]
         return sequence[1:]
 
     def dict_connected_elements(self, prev_iteration, passed_elements):
@@ -50,14 +50,13 @@ class AboutWays(object):
             for id_num in prev_iteration[prev_sender]:
                 if id_num not in passed_elements:
                     iteration[id_num] = self.connected_to(id_num, get_sender_dict(prev_iteration))
-        print iteration
         return iteration
 
     def connected_to(self, id_num, forbidden_elements):
         connections = {}
         for connection in self.connections:
             is_connected = connected_p(connection, id_num, forbidden_elements)
-            if is_connected: #and is_connected in self.set_id:
+            if isinstance(is_connected, int): #and is_connected in self.set_id:
                 connections[is_connected] = connection.weight
             # elif is_connected:
             #     connections[is_connected] = self.gateway_weight(id_num, is_connected)

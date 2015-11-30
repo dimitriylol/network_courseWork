@@ -36,7 +36,7 @@ def min_transit_from_sequence(sequence_sending):
 
 def time_sending(shortest_weight, information_length, message_len, delay=0):
     """
-    2000 is max length of packet, that can receive element of network
+    3000 is max length of packet, that can receive element of network
     :param information_length:
     :param shortest_weight:
     :param message_len:
@@ -61,6 +61,11 @@ class RegionalNetwork:
     def set_connection(self, id1, id2, satellite=False):
         self.connections.append(NetworkConnection(random.choice(self.connections_weight),
                                                   id1, id2, satellite=satellite))
+        print "add connection"
+        for connect in self.connections:
+            print connect.to_json()
+        return {'weight': self.connections[-1].weight, 'power': self.connections[-1].power ,
+                'type': self.connections[-1].get_type_connection()}
 
     def get_random_element_id(self):
         return random.choice(self.elements).id_number
@@ -122,6 +127,9 @@ class RegionalNetwork:
         return False
 
     def table_of_ways(self, id_start):
+        print "connections"
+        for connect in self.connections:
+            print connect.to_json()
         sequence_sending = self.sequence_sending(id_start)
         return {'shortest': shortest_ways_from_sequence(sequence_sending),
                 'min_transit': min_transit_from_sequence(sequence_sending)}
@@ -130,14 +138,14 @@ class RegionalNetwork:
         self.fake_gateway_connections = connections
 
     def sequence_sending(self, id_start):
-        self.about_ways.num_elements = self.elements_num + 3    # because one more 3 gateway elements
+        self.about_ways.num_elements = self.elements_num + 3    # because 3 more gateway elements
         self.about_ways.connections = filter(lambda connection: connection.power, self.connections) + \
                                       filter(lambda connection: connection.power, self.fake_gateway_connections)
         return self.about_ways.sequence_sending(id_start)
 
     def send_message(self, id_number, message_len):
         header_length = 100
-        package_length_lst = (1000, 1500, 1900)
+        package_length_lst = (1500, 2000, 3000)
 
         send_table_result = []
         shortest_table = shortest_ways_from_sequence(self.sequence_sending(id_number))
@@ -157,7 +165,7 @@ class RegionalNetwork:
                                                                                          package_length - header_length,
                                                                                          message_len)),
                                                              package_length_lst)})
-        return {'send_table': send_table_result, 'max_length_packet': 2000}
+        return {'send_table': send_table_result, 'max_length_packet': 3000}
 
     def delete_element(self, id_number):
         self.elements = filter(lambda element: not element.is_element_p(id_number), self.elements)
@@ -170,6 +178,7 @@ class RegionalNetwork:
 
     def add_element(self, id_number):
         self.elements.append(NetworkElement(id_number))
+        return {'power': self.elements[-1].power}
 
     def change_type(self, source, target, connection_type):
         for connection in self.connections:

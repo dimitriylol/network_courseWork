@@ -8,6 +8,8 @@ var getSequenceSending = '/sequenceSending';
 var getMessageSending = '/sendMessage';
 var powerElement = '/propertyElement';
 var powerConnection = '/propertiesConnection';
+var addElement = '/addElement';
+var addConnection = '/addConnection';
 
 //comon used variables:
 var tip_edge_hide;
@@ -65,12 +67,13 @@ function showSendingMessage(id, message_len) {
             var table = body.select('#tableWays');
             if (table.select('table'))
                 table.selectAll("*").remove();
-            fillTableSending(sendTable.send_table);
+            fillTableSending(sendTable.max_length_packet, sendTable.send_table);
             $('#tableWays').dialog('open');
         })
 }
 
-function fillTableSending(sendTable) {
+function fillTableSending(max_len, sendTable) {
+    body.select('#tableWays').append('p').text('Max size of packet: ' + max_len)
     var table = body.select('#tableWays').append('table');
     var packet_len = sendTable[0].logical_connection.map(function (elem, index, array) {
         return elem[0];
@@ -284,35 +287,35 @@ var nodes = [-1],
 
 var force = d3.layout.force()
 
-function defineArrowMarkers() {
-    function createArrow(markerParam, pathD) {
-        Object.assign(markerParam, {
-            viewBox: '0 -5 10 10',
-            markerWidth: 3,
-            markerHeight: 3,
-            orient: 'auto'
-        });
-
-        svg.append('svg:defs')
-            .append('svg:marker').attr(markerParam)
-            .append('svg:path').attr({
-                fill: '#000',
-                d: pathD
-            });
-    }
-
-    createArrow({
-        id: 'end-arrow',
-        refX: 6
-    }, 'M0,-5L10,0L0,5');
-
-    createArrow({
-        id: 'start-arrow',
-        refX: 4
-    }, 'M10,-5L0,0L10,5');
-}
-
-defineArrowMarkers();
+//function defineArrowMarkers() {
+//    function createArrow(markerParam, pathD) {
+//        Object.assign(markerParam, {
+//            viewBox: '0 -5 10 10',
+//            markerWidth: 3,
+//            markerHeight: 3,
+//            orient: 'auto'
+//        });
+//
+//        svg.append('svg:defs')
+//            .append('svg:marker').attr(markerParam)
+//            .append('svg:path').attr({
+//                fill: '#000',
+//                d: pathD
+//            });
+//    }
+//
+//    //createArrow({
+//    //    id: 'end-arrow',
+//    //    refX: 6
+//    //}, 'M0,-5L10,0L0,5');
+//    //
+//    //createArrow({
+//    //    id: 'start-arrow',
+//    //    refX: 4
+//    //}, 'M10,-5L0,0L10,5');
+//}
+//
+//defineArrowMarkers();
 
 // line displayed when dragging new nodes
 var drag_line = svg.append('svg:path')
@@ -355,15 +358,15 @@ function tick() {
 }
 
 //TODO: think about functions naming
-var isSelected = function(d) {return d === selected_link};
-var isLeftTrue = function(d) {return d.left ? 'url(#start-arrow)' : ''};
-var isRightTrue = function(d) {return d.right ? 'url(#end-arrow)' : ''};
-
-function updateExistingLinks() {
-    path.classed('selected', isSelected)
-        .style('marker-start', isLeftTrue)
-        .style('marker-end', isRightTrue);
-}
+//var isSelected = function(d) {return d === selected_link};
+//var isLeftTrue = function(d) {return d.left ? 'url(#start-arrow)' : ''};
+//var isRightTrue = function(d) {return d.right ? 'url(#end-arrow)' : ''};
+//
+//function updateExistingLinks() {
+//    path.classed('selected', isSelected)
+//        .style('marker-start', isLeftTrue)
+//        .style('marker-end', isRightTrue);
+//}
 
 function addNewLinks() {
     var link = path.enter().append('svg:path');
@@ -372,9 +375,9 @@ function addNewLinks() {
     link.attr('class', 'link')
         .attr('source', function(d) { return d.source.id; })
         .attr('target', function(d) { return d.target.id; })
-        .classed('selected', isSelected)
-        .style('marker-start', isLeftTrue)
-        .style('marker-end', isRightTrue)
+        //.classed('selected', isSelected)
+        //.style('marker-start', isLeftTrue)
+        //.style('marker-end', isRightTrue)
         .on('mouseover', function(d) {
             tip_edge.show(d);
         })
@@ -420,7 +423,7 @@ function restart() {
     // path (link) group
     path = path.data(links);
 
-    updateExistingLinks();
+    //updateExistingLinks();
     addNewLinks();
     removeOldLinks();
 
@@ -440,7 +443,7 @@ function restart() {
     // add new nodes
     var g = circle.enter().append('svg:g');
     
-    if (null != g[0][0]) {
+    if (null != g[0][0]) { // hang only one d3.tooltip on first node and using it for all elements
         g.call(tip_node);
     }
     g.append('svg:circle')
@@ -452,17 +455,15 @@ function restart() {
         .style('stroke', function(d) {return d3.rgb(colors(d.id)).darker().toString()})
         .classed('reflexive', isReflexive)
         .on('mouseover', function(d) {
+            if (selected_node === d) return;
             tip_node.show(d);
-
-            if (!mousedown_node || d === mousedown_node) return;
-
             // enlarge target node
             d3.select(this).attr('transform', 'scale(1.1)');
         })
         .on('mouseout', function(d) {
+            if (selected_node === d) return;
             if (d3.event.relatedTarget != body.select('#node')[0][0])
                 tip_node.hide();
-            if(!mousedown_node || d === mousedown_node) return;
 
             // unenlarge target node
             d3.select(this).attr('transform', '');
@@ -525,16 +526,23 @@ function restart() {
 
             if (link) {
                 link[direction] = true;
+                selected_link = link;
+                selected_node = null;
+                restart();
             } else {
-                link = {source: source, target: target, left: false, right: false};
-                link[direction] = true;
-                links.push(link);
+                sendingRequest(addConnection, {source: source.id, target: target.id},
+                    function(aboutConnection) {
+                        link = {source: source, target: target, left: false, right: false};
+                        for (var key in aboutConnection)
+                            link[key] = aboutConnection[key];
+                        link[direction] = true;
+                        links.push(link);
+                        // select new link
+                        //selected_link = link;
+                        //selected_node = null;
+                        restart();
+                    })
             }
-
-            // select new link
-            selected_link = link;
-            selected_node = null;
-            restart();
         });
 
     // showNodeIds();
@@ -570,6 +578,8 @@ function mousedown() {
         x: point[0],
         y: point[1]
     });
+
+    sendingRequest(addElement, {id: lastNodeId}, function(useless) {})
 
     restart();
 }

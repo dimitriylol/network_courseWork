@@ -46,7 +46,6 @@ def power_element():
     :return: JSON {'result': 'OK'}
     """
     request_result = request.get_json()
-    print request_result
     return course_work.network.power_element(int(request_result['id1']), request_result['power'])
 
 
@@ -56,7 +55,6 @@ def power_connection():
     :return: JSON {'result': 'OK'}
     """
     json_request = request.get_json()
-    print json_request
     return course_work.network.properties_connection(json_request)
 
 
@@ -65,7 +63,7 @@ def add_element():
     """
     :return: JSON {'result': 'OK'}
     """
-    return course_work.network.disable_element(int(request.get_json()['id']))
+    return course_work.network.add_element(int(request.get_json()['id']))
 
 
 @course_work.app.route('/addConnection', methods=['POST'])
@@ -73,6 +71,8 @@ def add_connection():
     """
     :return: JSON {'result': 'OK'}
     """
+    print "addConnection {0}".format(request.get_json())
+    print "source {0} target {1}".format(int(request.get_json()['source']), int(request.get_json()['target']))
     return course_work.network.add_connection(int(request.get_json()['source']), int(request.get_json()['target']))
 
 
@@ -82,5 +82,5 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    course_work.app.debug = True
+    # course_work.app.debug = True
     course_work.app.run()

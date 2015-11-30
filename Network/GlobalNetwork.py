@@ -18,10 +18,6 @@ def get_all_connections_number(reg_network, average_level, element_in_network):
     return res
 
 
-def number_reg_network(id_number):
-    return id_number % 7
-
-
 class GlobalNetwork():
     def __init__(self):
         self.reg_network_num = 4
@@ -94,13 +90,26 @@ class GlobalNetwork():
             reg_network.power_connection(source, target, power)
         return {'connection_changed': 'OK'}
 
-    # def add_connection(self, source, target):
-    #     self.elements[number_reg_network(source)].set_connection(source, target)
-    #     return json.dumps({'result': 'OK'})
-    #
-    # def add_element(self, id_number):
-    #     self.elements[number_reg_network(id_number)].add_element(id_number)
-    #     return json.dumps({'result': 'OK'})
+    def add_connection(self, source, target):
+        print "source {0}".format(source)
+        print "target {0}".format(target)
+        number_source = self.elements.index(self.get_reg_network(source))
+        number_target = self.elements.index(self.get_reg_network(target))
+        print "source {0} target {0}".format(number_source, number_target)
+        add_to_network = self.choose_not_last(number_source, number_target)
+        if isinstance(add_to_network, bool):
+            if number_source == number_target:
+                add_to_network = number_source
+            else:
+                result = json.dumps(self.elements[source].set_connection(source, target))       # instead source could be target
+                self.fake_gateway_connections.append(self.elements[source].connections[-1])
+                return result
+        print "add_to_network {0}".format(add_to_network)
+        return json.dumps(self.elements[add_to_network].set_connection(source, target))
+
+    def add_element(self, id_number):
+        self.elements[-1].add_element(id_number)
+        return json.dumps({'result': 'OK'})
 
     def change_type(self, source, target, connection_type):
         connect_type = connection_type == 'duplex' and 1 or 1.5
@@ -114,3 +123,7 @@ class GlobalNetwork():
                                                      json_request['power']),
                                **self.change_type(int(json_request['id1']), int(json_request['id2']),
                                                   json_request['type'])))
+
+    def choose_not_last(self, number_source, number_target):
+        return number_target == self.reg_network_num - 1 and number_source or \
+               number_source == self.reg_network_num - 1 and number_target
