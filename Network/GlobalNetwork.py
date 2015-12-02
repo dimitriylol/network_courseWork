@@ -91,25 +91,29 @@ class GlobalNetwork():
         return {'connection_changed': 'OK'}
 
     def add_connection(self, source, target):
-        print "source {0}".format(source)
-        print "target {0}".format(target)
         number_source = self.elements.index(self.get_reg_network(source))
         number_target = self.elements.index(self.get_reg_network(target))
-        print "source {0} target {0}".format(number_source, number_target)
         add_to_network = self.choose_not_last(number_source, number_target)
+        print "num_source {0}, num_target {1}, not last {2}".format(number_source, number_target, add_to_network)
         if isinstance(add_to_network, bool):
-            if number_source == number_target:
+            if number_source == number_target:  # add connection inside regional network
                 add_to_network = number_source
-            else:
-                result = json.dumps(self.elements[source].set_connection(source, target))       # instead source could be target
-                self.fake_gateway_connections.append(self.elements[source].connections[-1])
+            else:               # add gateway connection
+                result = json.dumps(self.elements[number_source].set_connection(source, target))       # instead source could be target
+                self.fake_gateway_connections.append(self.elements[number_source].connections[-1])
                 return result
+        else:   # add connection to new element
+            if number_source == self.reg_network_num - 1:
+                self.elements[number_source].delete_element(source)
+                self.elements[number_target].add_element(source)
+            else:
+                self.elements[number_target].delete_element(target)
+                self.elements[number_source].add_element(source)
         print "add_to_network {0}".format(add_to_network)
         return json.dumps(self.elements[add_to_network].set_connection(source, target))
 
     def add_element(self, id_number):
-        self.elements[-1].add_element(id_number)
-        return json.dumps({'result': 'OK'})
+        return json.dumps(self.elements[-1].add_element(id_number))
 
     def change_type(self, source, target, connection_type):
         connect_type = connection_type == 'duplex' and 1 or 1.5

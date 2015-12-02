@@ -34,9 +34,15 @@ class AboutWays(object):
         print "in sequence sending conenctions"
         for connect in self.connections:
             print connect.to_json()
+        i = 0
         while passed_elements.__len__() < self.num_elements:    # maybe wrong
             sequence.append(self.dict_connected_elements(sequence[-1], passed_elements))
             passed_elements.update(set((elem for elem in sequence[-1])))
+            print "passed elements {0}".format(passed_elements)
+            print "sequence {0}".format(sequence)
+            if i > 5:
+                raise ArithmeticError()
+            i += 1
         return sequence[1:]
 
     def dict_connected_elements(self, prev_iteration, passed_elements):

@@ -1,6 +1,8 @@
 import random
 from collections import OrderedDict
 
+import math
+
 from Network.NetworkConnection import NetworkConnection
 from Network.NetworkElement import NetworkElement
 from Network.AboutWays import AboutWays
@@ -43,9 +45,11 @@ def time_sending(shortest_weight, information_length, message_len, delay=0):
     :param delay:
     :return:
     """
-    package_num = round(message_len / float(information_length))
+    print "shortest_weight {0} inf_len {1} mess_len {2}".format(shortest_weight, information_length, message_len)
+    package_num = math.ceil(float(message_len) / float(information_length))
     result = package_num * shortest_weight
-    return result + delay
+    print "package_num {0} result {1}".format(package_num, result)
+    return result + delay*package_num
 
 
 class RegionalNetwork:
@@ -127,7 +131,7 @@ class RegionalNetwork:
         return False
 
     def table_of_ways(self, id_start):
-        print "connections"
+        print "table ways, connections"
         for connect in self.connections:
             print connect.to_json()
         sequence_sending = self.sequence_sending(id_start)
@@ -145,7 +149,7 @@ class RegionalNetwork:
 
     def send_message(self, id_number, message_len):
         header_length = 100
-        package_length_lst = (1500, 2000, 3000)
+        package_length_lst = (1600, 2100, 3100)
 
         send_table_result = []
         shortest_table = shortest_ways_from_sequence(self.sequence_sending(id_number))
@@ -165,7 +169,7 @@ class RegionalNetwork:
                                                                                          package_length - header_length,
                                                                                          message_len)),
                                                              package_length_lst)})
-        return {'send_table': send_table_result, 'max_length_packet': 3000}
+        return {'send_table': send_table_result, 'max_length_packet': 3500}
 
     def delete_element(self, id_number):
         self.elements = filter(lambda element: not element.is_element_p(id_number), self.elements)

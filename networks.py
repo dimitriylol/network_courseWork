@@ -63,6 +63,7 @@ def add_element():
     """
     :return: JSON {'result': 'OK'}
     """
+    print "addElement {0}".format(request.get_json())
     return course_work.network.add_element(int(request.get_json()['id']))
 
 
@@ -82,5 +83,5 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    # course_work.app.debug = True
+    course_work.app.debug = True
     course_work.app.run()

@@ -20,11 +20,7 @@ var buttonTableTemplate = '<button id="showTable" onclick="showTableWays(\'{id}\
 var buttonSequenceTemplate = '<button id="showSequence" onclick="showSequenceSending(\'{id}\')">Show sequence</button>';
 var buttonSendingTemplate = '<button  id="showSending" onclick="showSendingMessage(\'{id}\', \'{len}\')">Show sending</button>';
 var KEY = {
-    backspace: 8,
     delete: 46,
-    B: 66,
-    L: 76,
-    R: 82,
     ctrl: 17
 };
 
@@ -61,19 +57,25 @@ function sendingRequest(url_request, objToSend, done_function) {
 }
 
 function showSendingMessage(id, message_len) {
-    sendingRequest(getMessageSending, { 'id': id, 'message_len': message_len },
+    var mess_len = body.select('[name="messageLen"]');
+    if (!mess_len.empty() && mess_len[0][0].value)
+        mess_len = mess_len[0][0].value;
+    else
+        mess_len = message_len;
+    sendingRequest(getMessageSending, { 'id': id, 'message_len': mess_len },
         function (sendTable) {
             // TODO: refactor this shit
             var table = body.select('#tableWays');
             if (table.select('table'))
                 table.selectAll("*").remove();
-            fillTableSending(sendTable.max_length_packet, sendTable.send_table);
+            fillTableSending(sendTable.max_length_packet, sendTable.send_table, mess_len);
             $('#tableWays').dialog('open');
         })
 }
 
-function fillTableSending(max_len, sendTable) {
+function fillTableSending(max_len, sendTable, message_len) {
     body.select('#tableWays').append('p').text('Max size of packet: ' + max_len)
+    body.select('#tableWays').append('p').text(' Length of message: ' + message_len)
     var table = body.select('#tableWays').append('table');
     var packet_len = sendTable[0].logical_connection.map(function (elem, index, array) {
         return elem[0];
@@ -188,6 +190,7 @@ function contentTooltip(id, message_len, power) {
             buttonTableTemplate.replace('{id}', id) + '</p><p>' +
             buttonSequenceTemplate.replace('{id}', id) + '</p><p>' +
             buttonSendingTemplate.replace('{id}', id).replace('{len}', message_len) + '</p><p>' +
+            'Message length: <input type="text" name="messageLen"></p><p>' +
             getCheckboxTemplate('On/off:', power, '"elementPower"') +
             '</p></div>';
 }
@@ -579,7 +582,11 @@ function mousedown() {
         y: point[1]
     });
 
-    sendingRequest(addElement, {id: lastNodeId}, function(useless) {})
+    sendingRequest(addElement, {id: lastNodeId}, function(aboutElement) {
+        var last_node = nodes.find(function(node) { return node.id == lastNodeId; })
+        for (var key in aboutElement)
+            last_node[key] = aboutElement[key];
+    })
 
     restart();
 }
@@ -622,6 +629,11 @@ function spliceLinksForNode(node) {
 var lastKeyDown = -1;
 
 function keydown() {
+    //console.log(d3.event.keyCode, KEY);
+    if ([KEY.delete, KEY.ctrl].indexOf(d3.event.keyCode) === -1) {
+        return;
+    }
+
     d3.event.preventDefault();
 
     if (lastKeyDown !== -1) return;
@@ -635,7 +647,6 @@ function keydown() {
     if (!selected_node && !selected_link) return;
 
     switch (d3.event.keyCode) {
-        case KEY.backspace:
         case KEY.delete:
             if(selected_node) {
                 nodes.splice(nodes.indexOf(selected_node), 1);
@@ -646,34 +657,6 @@ function keydown() {
 
             selected_link = null;
             selected_node = null;
-            restart();
-        break;
-        case KEY.B:
-            if (selected_link) {
-                // set link direction to both left and right
-                selected_link.left = true;
-                selected_link.right = true;
-            }
-
-            restart();
-        break;
-        case KEY.L:
-            if (selected_link) {
-                // set link direction to left only
-                selected_link.left = true;
-                selected_link.right = false;
-            }
-            restart();
-        break;
-        case KEY.R:
-            if(selected_node) {
-                // toggle node reflexivity
-                selected_node.reflexive = !selected_node.reflexive;
-            } else if(selected_link) {
-                // set link direction to right only
-                selected_link.left = false;
-                selected_link.right = true;
-            }
             restart();
         break;
     }
